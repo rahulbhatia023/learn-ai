@@ -1,8 +1,5 @@
-from typing import Sequence
-
 import streamlit as st
 from langchain.prompts import Prompt
-from langchain_core.tools import BaseTool
 from langchain_openai import ChatOpenAI
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph, MessagesState
@@ -22,35 +19,24 @@ class SimpleRAGAgent:
     nodes_to_display = ["agent", "generate"]
 
     @classmethod
-    def get_tools(cls) -> Sequence[BaseTool]:
-        return [
-            DocumentsRetrieverTool(
-                pdf_file=st.session_state["uploaded_file"][cls.agent_name],
-                openai_api_key=st.session_state["OPENAI_API_KEY"],
-            )
-        ]
-
-    @classmethod
     def get_graph(cls) -> CompiledStateGraph:
-        if (
-            "uploaded_file" in st.session_state
-            and cls.agent_name in st.session_state["uploaded_file"]
-            and st.session_state["uploaded_file"][cls.agent_name]
-        ):
-            tools = cls.get_tools()
-        else:
+        if "sr_vector_store" not in st.session_state:
             tools = []
+        else:
+            tools = [
+                DocumentsRetrieverTool(
+                    faiss_vector_store=st.session_state["sr_vector_store"]
+                )
+            ]
 
         llm = ChatOpenAI(
             model_name="gpt-4o",
             openai_api_key=st.session_state["OPENAI_API_KEY"],
             temperature=0,
-        )
-
-        llm_with_tools = llm.bind_tools(tools)
+        ).bind_tools(tools)
 
         def agent(state):
-            return {"messages": [llm_with_tools.invoke(state["messages"])]}
+            return {"messages": [llm.invoke(state["messages"])]}
 
         def generate(state):
             messages = state["messages"]
@@ -69,7 +55,7 @@ class SimpleRAGAgent:
                 """
             )
 
-            rag_chain = prompt | llm_with_tools
+            rag_chain = prompt | llm
 
             response = rag_chain.invoke({"context": docs, "question": question})
 

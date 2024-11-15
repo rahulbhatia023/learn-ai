@@ -1,11 +1,18 @@
 import tempfile
 
 import streamlit as st
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.vectorstores import FAISS
 from langchain_core.messages import SystemMessage, HumanMessage
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pydantic import SecretStr
 
 from agents.simple_rag_agent import SimpleRAGAgent
 
 required_keys = {"OPENAI_API_KEY": "password"}
+
+file_uploader_key = "sr_uploaded_file"
 
 agent = SimpleRAGAgent
 
@@ -32,6 +39,27 @@ def add_chat_message(role: str, content: str):
     )
     with st.chat_message(role):
         st.markdown(f"<p class='fontStyle'>{content}</p>", unsafe_allow_html=True)
+
+
+def store_doc_chunks():
+    if st.session_state.get(file_uploader_key):
+        temp_file = tempfile.NamedTemporaryFile()
+        temp_file.write(st.session_state[file_uploader_key].read())
+
+        loaded_pdf = PyPDFLoader(file_path=temp_file.name).load()
+
+        documents = RecursiveCharacterTextSplitter(
+            chunk_size=500, chunk_overlap=50
+        ).split_documents(loaded_pdf)
+
+        vector_store = FAISS.from_documents(
+            documents=documents,
+            embedding=OpenAIEmbeddings(
+                openai_api_key=SecretStr(st.session_state["OPENAI_API_KEY"])
+            ),
+        )
+
+        st.session_state["sr_vector_store"] = vector_store
 
 
 st.set_page_config(page_title=agent.agent_name, page_icon="🤖", layout="wide")
@@ -70,33 +98,23 @@ with st.sidebar:
             st.session_state[key_name] = api_key
 
 if required_keys and not required_keys_missing():
-    agent_graph = agent.get_graph()
-
     with st.sidebar:
         st.divider()
 
         # FILE UPLOADER
-
-        if "uploaded_file" not in st.session_state:
-            st.session_state.uploaded_file = {}
-        if agent.agent_name not in st.session_state.uploaded_file:
-            st.session_state.uploaded_file[agent.agent_name] = None
 
         st.markdown(
             "<h3 style='color:#E9EFEC;font-family: Poppins;text-align: center'>Upload PDF File</h3>",
             unsafe_allow_html=True,
         )
 
-        if uploaded_file := st.file_uploader(
+        st.file_uploader(
             label="Upload PDF File",
-            type=["pdf"],
             label_visibility="hidden",
-        ):
-            if not st.session_state["uploaded_file"][agent.agent_name]:
-                with tempfile.NamedTemporaryFile(delete=False) as file:
-                    file.write(uploaded_file.read())
-                    file.flush()
-                    st.session_state["uploaded_file"][agent.agent_name] = file.name
+            type=["pdf"],
+            key=file_uploader_key,
+            on_change=store_doc_chunks(),
+        )
 
         st.divider()
 
@@ -119,6 +137,8 @@ if required_keys and not required_keys_missing():
             unsafe_allow_html=True,
         )
 
+        agent_graph = agent.get_graph()
+
         st.image(
             agent_graph.get_graph(xray=1).draw_mermaid_png(),
             use_container_width=True,
@@ -138,7 +158,7 @@ if required_keys and not required_keys_missing():
             )
 
     if human_message := st.chat_input():
-        if not st.session_state.uploaded_file[agent.agent_name]:
+        if not st.session_state[file_uploader_key]:
             st.error("Please upload a file before sending a message.", icon="🚨")
         else:
             add_chat_message(role="human", content=human_message)
