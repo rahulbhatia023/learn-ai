@@ -33,10 +33,12 @@ class SimpleRAGAgent:
             model_name="gpt-4o",
             openai_api_key=st.session_state["OPENAI_API_KEY"],
             temperature=0,
-        ).bind_tools(tools)
+        )
+
+        llm_with_tools = llm.bind_tools(tools)
 
         def agent(state):
-            return {"messages": [llm.invoke(state["messages"])]}
+            return {"messages": [llm_with_tools.invoke(state["messages"])]}
 
         def generate(state):
             messages = state["messages"]
