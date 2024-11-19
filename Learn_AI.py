@@ -58,9 +58,9 @@ st.html(f"<h1 style='{page_header_style}'>{page_header}</h1>")
 
 container = st.container()
 
-col11, _, _ = container.columns([1, 1, 1], gap="large")
+_, col12, _ = container.columns([1, 1, 1], gap="large")
 
-with col11:
+with col12:
     with st.container(border=True):
         st.html(f"<h3 style='{card_title_style}'>Simple RAG</h1>")
         st.image(image="static/images/simple-rag-banner.jpg", use_container_width=True)
