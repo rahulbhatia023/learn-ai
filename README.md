@@ -44,7 +44,7 @@ You can learn more about RAG with the help of below video by [Underfitted](https
 ### How to use
 
 * Visit the link: [Simple RAG](https://learn-ai.streamlit.app/Simple_RAG)
-* User need to input the OpenAI API key. You can create one [here](https://platform.openai.com/settings/organization/api-keys).
+* The default OpenAI API key is provided to the application but if its not working then users need to input their own OpenAI API key. You can create one [here](https://platform.openai.com/settings/organization/api-keys).
 * Upload any readable PDF file
 * Ask questions from the document using chat interface
 
