@@ -27,7 +27,7 @@ This makes them more accurate and up-to-date compared to regular AI models that 
 RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
 It bridges the gap between advanced AI and real-time, fact-based knowledge.
 
-You can learn more about RAG with the help of below video by Underfitted:
+You can learn more about RAG with the help of below video by [Underfitted](https://www.youtube.com/@underfitted):
 
 <p>
   <a href="https://www.youtube.com/watch?v=q9MD_hU2Yd8">
@@ -43,14 +43,14 @@ You can learn more about RAG with the help of below video by Underfitted:
 
 ### How to use
 
-* Visit the link: [Learn AI](https://learn-ai.streamlit.app/)
+* Visit the link: [Simple RAG](https://learn-ai.streamlit.app/Simple_RAG)
 * User need to input the OpenAI API key. You can create one [here](https://platform.openai.com/settings/organization/api-keys).
 * Upload any readable PDF file
 * Ask questions from the document using chat interface
 
 <br>
 
-<img src="static/images/simple-rag.png" width="640" height="360">
+<img src="static/images/simple-rag-ui-1.png" width="640" height="360">
 
 <br><br>
 
@@ -58,7 +58,7 @@ User can also view the langgraph workflow defined for the application on the lef
 
 <br>
 
-<img src="static/images/simple-rag-langgraph.png" width="640" height="360">
+<img src="static/images/simple-rag-ui-2.png" width="640" height="360">
 
 
 ---

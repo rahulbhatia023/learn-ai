@@ -62,6 +62,7 @@ def store_document_in_vector_store(document):
 
     return vector_store
 
+
 st.set_page_config(page_title=agent.agent_name, page_icon="🤖", layout="wide")
 
 st.markdown(
@@ -93,7 +94,7 @@ with st.sidebar:
             st.session_state[key_name] = ""
 
         if api_key := st.text_input(
-                label=f"{key_name}", value=st.session_state[key_name], type=key_type
+            label=f"{key_name}", value=st.session_state[key_name], type=key_type
         ):
             st.session_state[key_name] = api_key
 
@@ -109,16 +110,21 @@ if required_keys and not required_keys_missing():
         )
 
         if uploaded_file := st.file_uploader(
-            label="Upload PDF File",
-            label_visibility="hidden",
-            type=["pdf"]
+            label="Upload PDF File", label_visibility="hidden", type=["pdf"]
         ):
-            if not st.session_state[uploaded_file_key] or st.session_state[uploaded_file_key] != uploaded_file:
+            if (
+                not st.session_state[uploaded_file_key]
+                or st.session_state[uploaded_file_key] != uploaded_file
+            ):
                 st.session_state[uploaded_file_key] = uploaded_file
-                st.session_state["sr_vector_store"] = store_document_in_vector_store(uploaded_file)
+                st.session_state["sr_vector_store"] = store_document_in_vector_store(
+                    uploaded_file
+                )
 
         if not uploaded_file and st.session_state[uploaded_file_key]:
-            st.success(f"Uploaded: {st.session_state[uploaded_file_key].name}", icon="✅")
+            st.success(
+                f"Uploaded: {st.session_state[uploaded_file_key].name}", icon="✅"
+            )
 
         st.divider()
 
@@ -184,15 +190,15 @@ if required_keys and not required_keys_missing():
             config = {"configurable": {"thread_id": "1"}}
 
             for event in agent_graph.stream(
-                    input=agent_input,
-                    config=config,
-                    stream_mode="updates",
+                input=agent_input,
+                config=config,
+                stream_mode="updates",
             ):
                 for k, v in event.items():
                     if k in agent.nodes_to_display:
                         if "messages" in v:
                             m = v["messages"][-1]
                             if (
-                                    m.type == "ai" and not m.tool_calls
+                                m.type == "ai" and not m.tool_calls
                             ) or m.type == "human":
                                 add_chat_message(role=m.type, content=m.content)
