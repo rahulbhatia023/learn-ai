@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "learn-ai"
+version = "0.1.0"
+description = "Learn AI"
+authors = ["Rahul Bhatia <rahul.bhatia023@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+streamlit = "^1.40.1"
+watchdog = "^6.0.0"
+black = "^24.10.0"
+langchain-openai = "^0.2.8"
+langgraph = "^0.2.48"
+langchain-community = "^0.3.7"
+pypdf = "^5.1.0"
+faiss-cpu = "^1.9.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
