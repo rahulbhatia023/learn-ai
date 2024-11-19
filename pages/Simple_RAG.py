@@ -49,10 +49,6 @@ def store_document_in_vector_store(document):
 
     loaded_pdf = PyPDFLoader(file_path=temp_file.name).load()
 
-    st.session_state.page_messages[agent.agent_name].append(
-        {"role": "ai", "content": f"Loaded pdf document: {uploaded_file.name}"}
-    )
-
     documents = RecursiveCharacterTextSplitter(
         chunk_size=500, chunk_overlap=50
     ).split_documents(loaded_pdf)
