@@ -97,7 +97,7 @@ with st.sidebar:
             st.session_state[key_name] = None
 
         if not st.session_state[key_name]:
-            if st.secrets[key_name]:
+            if key_name in st.secrets and st.secrets[key_name]:
                 st.session_state[key_name] = st.secrets[key_name]
 
         if api_key := st.text_input(
