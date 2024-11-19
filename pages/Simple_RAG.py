@@ -65,7 +65,7 @@ def store_document_in_vector_store(document):
 
 st.set_page_config(page_title=agent.agent_name, page_icon="🤖", layout="wide")
 
-st.markdown(
+st.html(
     """
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
@@ -78,9 +78,12 @@ st.markdown(
         .fontStyle {
             font-family: 'Poppins';
         }
+        
+        [title="Show password text"] {
+            display: none;
+        }
     </style>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 st.markdown(
@@ -91,7 +94,11 @@ st.markdown(
 with st.sidebar:
     for key_name, key_type in required_keys.items():
         if key_name not in st.session_state:
-            st.session_state[key_name] = ""
+            st.session_state[key_name] = None
+
+        if not st.session_state[key_name]:
+            if st.secrets[key_name]:
+                st.session_state[key_name] = st.secrets[key_name]
 
         if api_key := st.text_input(
             label=f"{key_name}", value=st.session_state[key_name], type=key_type
