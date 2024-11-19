@@ -1,7 +1,13 @@
 # Objective
 
+I started this repository as a part of my journey to learn about Generative AI. 
+Here, I implement my learnings and build some cool stuffs around the same.
+I am entirely new to this and just started my journey in the field of AI.
+This time I desire to learn and share in public.
+The only objective is to share my journey and to learn from other talented and experienced people out there.
+
 This repository contains streamlit powered AI apps to demonstrate various concepts in the field of Generative AI.<br>
-You can access the UI interface here. <br><br>
+You can access the UI interface [here](https://learn-ai.streamlit.app/). <br><br>
 
 ---
 
@@ -31,15 +37,29 @@ You can learn more about RAG with the help of below video by Underfitted:
 
 ### Tech Stack
 
-* LangGraph - To define the agentic flow of the application
-* OpenAI - Used LLM model `gpt-4o` for the chat
+* [LangGraph](https://www.langchain.com/langgraph) - To define the agentic flow of the application
+* [OpenAI API](https://openai.com/api/) - To interact with the OpenAI provided LLM models
+* [Streamlit](https://streamlit.io/) - For the chat UI interface powered by python
 
 ### How to use
 
-* Visit the link: 
-* User need to input the OpenAI API key
+* Visit the link: [Learn AI](https://learn-ai.streamlit.app/)
+* User need to input the OpenAI API key. You can create one [here](https://platform.openai.com/settings/organization/api-keys).
 * Upload any readable PDF file
 * Ask questions from the document using chat interface
+
+<br>
+
+<img src="static/images/simple-rag.png" width="640" height="360">
+
+<br><br>
+
+User can also view the langgraph workflow defined for the application on the left sidebar that is rendered during the runtime.
+
+<br>
+
+<img src="static/images/simple-rag-langgraph.png" width="640" height="360">
+
 
 ---
 
