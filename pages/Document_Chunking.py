@@ -2,6 +2,7 @@ import tempfile
 
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import SecretStr
@@ -40,6 +41,14 @@ openai_api_key = "OPENAI_API_KEY"
 if openai_api_key not in st.session_state:
     st.session_state[openai_api_key] = ""
 
+user_query_key = "dc_user_query"
+if user_query_key not in st.session_state:
+    st.session_state[user_query_key] = ""
+
+similar_chunks_key = "dc_similar_chunks"
+if similar_chunks_key not in st.session_state:
+    st.session_state[similar_chunks_key] = []
+
 st.set_page_config(
     page_title="Document Chunking",
     page_icon="🤖",
@@ -63,7 +72,9 @@ st.html(
     """
 )
 
-st.html(f"<h2 style='font-family:Poppins; color:#C4DAD2; text-align: center'>Document Chunking</h2><br/>")
+st.html(
+    f"<h2 style='font-family:Poppins; color:#C4DAD2; text-align: center'>Document Chunking</h2><br/>"
+)
 
 with st.container():
     # PAGE-1: Upload PDF
@@ -74,14 +85,14 @@ with st.container():
         )
 
         if uploaded_file := st.file_uploader(
-                label="Upload PDF File",
-                label_visibility="hidden",
-                type=["pdf"],
-                key=file_uploader_key,
+            label="Upload PDF File",
+            label_visibility="hidden",
+            type=["pdf"],
+            key=file_uploader_key,
         ):
             if (
-                    not st.session_state[uploaded_file_key]
-                    or st.session_state[uploaded_file_key] != uploaded_file
+                not st.session_state[uploaded_file_key]
+                or st.session_state[uploaded_file_key] != uploaded_file
             ):
                 st.session_state[uploaded_file_key] = uploaded_file
 
@@ -118,14 +129,19 @@ with st.container():
 
             _, col2, _ = st.columns([1, 1, 1])
             with col2:
-                if st.button(label="Create chunks", type="secondary", use_container_width=True):
+                if st.button(
+                    label="Create chunks", type="secondary", use_container_width=True
+                ):
                     text_splitter = RecursiveCharacterTextSplitter(
                         chunk_size=st.session_state[chunk_size_key],
                         chunk_overlap=st.session_state[chunk_overlap_key],
                     )
 
-                    chunks = text_splitter.split_documents(st.session_state[pdf_pages_key])
+                    chunks = text_splitter.split_documents(
+                        st.session_state[pdf_pages_key]
+                    )
 
+                    st.session_state[chunks_key] = []
                     for chunk_id, chunk_obj in enumerate(chunks):
                         st.session_state[chunks_key].append(
                             {"chunk_id": chunk_id + 1, "chunk": chunk_obj}
@@ -158,7 +174,9 @@ with st.container():
                     st.error("Please enter your OpenAI API key.", icon="🚨")
 
             if api_key := st.text_input(
-                    label=f"{openai_api_key}", value=st.session_state[openai_api_key], type="password"
+                label=f"{openai_api_key}",
+                value=st.session_state[openai_api_key],
+                type="password",
             ):
                 st.session_state[openai_api_key] = api_key
 
@@ -167,9 +185,9 @@ with st.container():
                 _, col2, _ = st.columns([1, 1, 1])
                 with col2:
                     if st.button(
-                            label="Create embeddings",
-                            type="secondary",
-                            use_container_width=True,
+                        label="Create embeddings",
+                        type="secondary",
+                        use_container_width=True,
                     ):
                         embeddings = OpenAIEmbeddings(
                             openai_api_key=SecretStr(st.session_state[openai_api_key]),
@@ -179,7 +197,9 @@ with st.container():
                             chunk_info["chunk_embedding"] = embeddings.embed_query(
                                 text=chunk_info["chunk"].page_content
                             )
-                            st.session_state[chunks_with_embeddings_key].append(chunk_info)
+                            st.session_state[chunks_with_embeddings_key].append(
+                                chunk_info
+                            )
 
         if st.session_state[chunks_with_embeddings_key]:
             st.html("<br/>")
@@ -189,11 +209,86 @@ with st.container():
                     "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Chunks with embeddings</h3>"
                 )
 
-                for chunk_info in st.session_state[chunks_key]:
+                for chunk_info in st.session_state[chunks_with_embeddings_key]:
                     with st.expander(f"Chunk: {chunk_info["chunk_id"]}"):
-                        chunk_content, chunk_embedding = st.tabs(["Chunk Content", "Chunk Embedding"])
+                        chunk_content, chunk_embedding = st.tabs(
+                            ["Chunk Content", "Chunk Embedding"]
+                        )
                         chunk_content.text(chunk_info["chunk"].page_content)
                         chunk_embedding.text(chunk_info["chunk_embedding"])
+
+    # PAGE-4: Similarity Search
+
+    elif st.session_state[navigation_page_key] == 4:
+        if st.session_state[chunks_with_embeddings_key]:
+            st.html(
+                "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Similarity Search</h3>"
+            )
+
+            if user_query := st.text_input(label="User Query"):
+                st.session_state[user_query_key] = user_query
+
+            st.html("<br/>")
+            _, col2, _ = st.columns([1, 1, 1])
+            with col2:
+                if st.button(
+                    label="Search",
+                    type="secondary",
+                    use_container_width=True,
+                ):
+                    if not st.session_state[user_query_key]:
+                        st.error("Please enter user query.", icon="🚨")
+                    else:
+                        vector_store = FAISS.from_documents(
+                            documents=[
+                                chunk_info["chunk"]
+                                for chunk_info in st.session_state[
+                                    chunks_with_embeddings_key
+                                ]
+                            ],
+                            embedding=OpenAIEmbeddings(
+                                openai_api_key=SecretStr(
+                                    st.session_state["OPENAI_API_KEY"]
+                                )
+                            ),
+                        )
+
+                        similar_chunks = vector_store.similarity_search_with_score(
+                            user_query
+                        )
+                        similar_chunks_sorted_by_score = sorted(
+                            similar_chunks, key=lambda x: x[1], reverse=True
+                        )
+
+                        st.session_state[similar_chunks_key] = (
+                            similar_chunks_sorted_by_score
+                        )
+
+        if st.session_state[similar_chunks_key]:
+            st.html("<br/>")
+
+            with st.container(border=True):
+                st.html(
+                    "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Similar Chunks</h3>"
+                )
+
+                for similar_chunk, score in st.session_state[similar_chunks_key]:
+                    for chunk_with_embedding in st.session_state[
+                        chunks_with_embeddings_key
+                    ]:
+                        if chunk_with_embedding["chunk"] == similar_chunk:
+                            with st.expander(
+                                f"Chunk: {chunk_with_embedding["chunk_id"]}, Score: {score}"
+                            ):
+                                chunk_content, chunk_embedding = st.tabs(
+                                    ["Chunk Content", "Chunk Embedding"]
+                                )
+                                chunk_content.text(
+                                    chunk_with_embedding["chunk"].page_content
+                                )
+                                chunk_embedding.text(
+                                    chunk_with_embedding["chunk_embedding"]
+                                )
 
 container = st.container()
 previous_col, _, next_col = container.columns([1, 1, 1])
@@ -202,11 +297,9 @@ previous_button_disabled = False
 next_button_disabled = False
 
 if st.session_state[navigation_page_key] == 1:
+    previous_button_disabled = True
     if not st.session_state[uploaded_file_key]:
-        previous_button_disabled = True
         next_button_disabled = True
-    else:
-        previous_button_disabled = True
 elif st.session_state[navigation_page_key] == 2:
     if not st.session_state[chunks_key]:
         next_button_disabled = True
@@ -217,10 +310,10 @@ elif st.session_state[navigation_page_key] == 3:
 with previous_col:
     st.html("<br/>")
     if st.button(
-            label="Previous",
-            type="primary",
-            use_container_width=True,
-            disabled=previous_button_disabled
+        label="Previous",
+        type="primary",
+        use_container_width=True,
+        disabled=previous_button_disabled,
     ):
         st.session_state[navigation_page_key] -= 1
         st.rerun()
@@ -228,10 +321,10 @@ with previous_col:
 with next_col:
     st.html("<br/>")
     if st.button(
-            label="Next",
-            type="primary",
-            use_container_width=True,
-            disabled=next_button_disabled
+        label="Next",
+        type="primary",
+        use_container_width=True,
+        disabled=next_button_disabled,
     ):
         st.session_state[navigation_page_key] += 1
         st.rerun()
