@@ -63,7 +63,12 @@ def store_document_in_vector_store(document):
     return vector_store
 
 
-st.set_page_config(page_title=agent.agent_name, page_icon="🤖", layout="wide")
+st.set_page_config(
+    page_title=agent.agent_name,
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="auto",
+)
 
 st.html(
     """

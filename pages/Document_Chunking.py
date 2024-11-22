@@ -38,7 +38,12 @@ def create_chunks():
     st.session_state["dc_chunks"] = chunks
 
 
-st.set_page_config(page_title="Document Chunking", page_icon="🤖", layout="wide")
+st.set_page_config(
+    page_title="Document Chunking",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="auto",
+)
 
 st.html(
     """
