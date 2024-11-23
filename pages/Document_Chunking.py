@@ -189,6 +189,8 @@ with st.container():
                         type="secondary",
                         use_container_width=True,
                     ):
+                        st.session_state[chunks_with_embeddings_key] = []
+
                         embeddings = OpenAIEmbeddings(
                             openai_api_key=SecretStr(st.session_state[openai_api_key]),
                         )
@@ -239,6 +241,8 @@ with st.container():
                     if not st.session_state[user_query_key]:
                         st.error("Please enter user query.", icon="🚨")
                     else:
+                        st.session_state[similar_chunks_key] = []
+
                         vector_store = FAISS.from_documents(
                             documents=[
                                 chunk_info["chunk"]
@@ -305,6 +309,9 @@ elif st.session_state[navigation_page_key] == 2:
         next_button_disabled = True
 elif st.session_state[navigation_page_key] == 3:
     if not st.session_state[chunks_with_embeddings_key]:
+        next_button_disabled = True
+elif st.session_state[navigation_page_key] == 4:
+    if not st.session_state[similar_chunks_key]:
         next_button_disabled = True
 
 with previous_col:
