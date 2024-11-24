@@ -1,9 +1,11 @@
 import tempfile
+import time
 
 import streamlit as st
+from langchain.prompts import Prompt
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import SecretStr
 
@@ -152,7 +154,7 @@ with st.container():
         if st.session_state[chunks_key]:
             with st.container(border=True):
                 st.html(
-                    "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Chunks</h3>"
+                    "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>Chunks</p>"
                 )
 
                 for chunk_info in st.session_state[chunks_key]:
@@ -208,7 +210,7 @@ with st.container():
 
             with st.container(border=True):
                 st.html(
-                    "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Chunks with embeddings</h3>"
+                    "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>Chunks with embeddings</p>"
                 )
 
                 for chunk_info in st.session_state[chunks_with_embeddings_key]:
@@ -227,7 +229,9 @@ with st.container():
                 "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Similarity Search</h3>"
             )
 
-            if user_query := st.text_input(label="User Query"):
+            if user_query := st.text_input(
+                label="User Query", value=st.session_state[user_query_key]
+            ):
                 st.session_state[user_query_key] = user_query
 
             st.html("<br/>")
@@ -260,6 +264,7 @@ with st.container():
                         similar_chunks = vector_store.similarity_search_with_score(
                             user_query
                         )
+
                         similar_chunks_sorted_by_score = sorted(
                             similar_chunks, key=lambda x: x[1], reverse=True
                         )
@@ -273,7 +278,23 @@ with st.container():
 
             with st.container(border=True):
                 st.html(
-                    "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Similar Chunks</h3>"
+                    "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>User Query Embedding</p>"
+                )
+
+                embeddings = OpenAIEmbeddings(
+                    openai_api_key=SecretStr(st.session_state[openai_api_key]),
+                )
+
+                user_query_embedding = embeddings.embed_query(
+                    st.session_state[user_query_key]
+                )
+
+                with st.expander(label="User Query Embedding"):
+                    st.text(user_query_embedding)
+
+                st.html("<br/>")
+                st.html(
+                    "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>Similar Chunks</p>"
                 )
 
                 for similar_chunk, score in st.session_state[similar_chunks_key]:
@@ -294,6 +315,107 @@ with st.container():
                                     chunk_with_embedding["chunk_embedding"]
                                 )
 
+    # PAGE-5: Generate Response
+
+    elif st.session_state[navigation_page_key] == 5:
+        if st.session_state[similar_chunks_key]:
+            st.html(
+                "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Generate Response</h3>"
+            )
+
+            col1, col2 = st.columns([1, 1])
+
+            with col1:
+                with st.container(border=True):
+                    st.html(
+                        "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>LLM Input</p>"
+                    )
+
+                    with st.container(border=True):
+                        st.html(
+                            "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>User Query</p>"
+                        )
+                        st.write(st.session_state[user_query_key])
+
+                    with st.container(border=True):
+                        st.html(
+                            "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>LLM Context</p>"
+                        )
+
+                        for similar_chunk, score in st.session_state[
+                            similar_chunks_key
+                        ]:
+                            for chunk_with_embedding in st.session_state[
+                                chunks_with_embeddings_key
+                            ]:
+                                if chunk_with_embedding["chunk"] == similar_chunk:
+                                    with st.expander(
+                                        f"Chunk: {chunk_with_embedding["chunk_id"]}, Score: {score}"
+                                    ):
+                                        st.text(
+                                            chunk_with_embedding["chunk"].page_content
+                                        )
+
+            with col2:
+                with st.container(border=True):
+                    st.html(
+                        "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>LLM Output</p>"
+                    )
+
+                    response = None
+
+                    col1, col2, col3 = st.columns([1, 3, 1])
+
+                    with col2:
+                        if st.button(
+                            label="Generate Response",
+                            type="secondary",
+                            use_container_width=True,
+                        ):
+                            llm = ChatOpenAI(
+                                model_name="gpt-4o",
+                                openai_api_key=st.session_state[openai_api_key],
+                                temperature=0,
+                            )
+
+                            prompt = Prompt.from_template(
+                                """
+                                You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+    
+                                Question: {question} 
+    
+                                Context: {context} 
+    
+                                Answer:
+                                """
+                            )
+
+                            rag_chain = prompt | llm
+
+                            llm_context = "\n\n".join(
+                                similar_chunk.page_content
+                                for (similar_chunk, _) in st.session_state[
+                                    similar_chunks_key
+                                ]
+                            )
+
+                            response = rag_chain.invoke(
+                                {
+                                    "context": llm_context,
+                                    "question": st.session_state[user_query_key],
+                                }
+                            ).content
+
+                    def stream_data():
+                        for word in response.split(" "):
+                            yield word + " "
+                            time.sleep(0.04)
+
+                    if response:
+                        with st.container(border=True):
+                            st.write_stream(stream_data)
+                            st.balloons()
+
 container = st.container()
 previous_col, _, next_col = container.columns([1, 1, 1])
 
@@ -313,6 +435,8 @@ elif st.session_state[navigation_page_key] == 3:
 elif st.session_state[navigation_page_key] == 4:
     if not st.session_state[similar_chunks_key]:
         next_button_disabled = True
+elif st.session_state[navigation_page_key] == 5:
+    next_button_disabled = True
 
 with previous_col:
     st.html("<br/>")
