@@ -45,7 +45,7 @@ def add_chat_message(role: str, content: str):
 
 def store_document_in_vector_store(document):
     temp_file = tempfile.NamedTemporaryFile()
-    temp_file.write(uploaded_file.read())
+    temp_file.write(document.read())
 
     loaded_pdf = PyPDFLoader(file_path=temp_file.name).load()
 
@@ -63,7 +63,12 @@ def store_document_in_vector_store(document):
     return vector_store
 
 
-st.set_page_config(page_title=agent.agent_name, page_icon="🤖", layout="wide")
+st.set_page_config(
+    page_title=agent.agent_name,
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="auto",
+)
 
 st.html(
     """
@@ -86,10 +91,7 @@ st.html(
     """
 )
 
-st.markdown(
-    f"<h2 class='fontStyle' style='color:#C4DAD2';>{agent.agent_name}</h2><br/>",
-    unsafe_allow_html=True,
-)
+st.html(f"<h2 class='fontStyle' style='color:#C4DAD2';>{agent.agent_name}</h2><br/>")
 
 with st.sidebar:
     for key_name, key_type in required_keys.items():
@@ -111,9 +113,8 @@ if required_keys and not required_keys_missing():
 
         # FILE UPLOADER
 
-        st.markdown(
-            "<h3 style='color:#E9EFEC;font-family: Poppins;text-align: center'>Upload PDF File</h3>",
-            unsafe_allow_html=True,
+        st.html(
+            "<h3 style='color:#E9EFEC;font-family: Poppins;text-align: center'>Upload PDF File</h3>"
         )
 
         if uploaded_file := st.file_uploader(
