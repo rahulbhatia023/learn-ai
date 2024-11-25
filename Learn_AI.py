@@ -56,30 +56,27 @@ st.html(
 
 st.html(f"<h1 style='{page_header_style}'>{page_header}</h1>")
 
-container = st.container()
-
-col11, col12, _ = container.columns([1, 1, 1], gap="large")
+col11, col12, _ = st.columns([1, 1, 1], gap="large")
 
 with col11:
     with st.container(border=True):
-        st.html(f"<h3 style='{card_title_style}'>Document Chunking</h1>")
-        st.image(image="static/images/simple-rag-banner.jpg", use_container_width=True)
+        st.html(f"<h3 style='{card_title_style}'>Demystify RAG</h1>")
+        st.image(
+            image="static/images/demystify-rag-banner.jpg", use_container_width=True
+        )
         st.html(
             f"""
                     <p style='font-family: {font_family};text-align: center'>
-                        <ul>
-                            One of the most common use cases of Generative AI is RAG (Retrieval Augmented Generation).
-                            RAG applications are tools that combine AI language models with real-world information sources to give better answers. 
-                            They fetch data from documents, websites, or databases and then generate answers using AI. 
-                            This makes them more accurate and up-to-date compared to regular AI models that rely only on training data. 
-                            RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
-                            It bridges the gap between advanced AI and real-time, fact-based knowledge.
-                        </ul>
+                            This app gives you a visual representation of how RAG works.
+                            It takes you to the tour of entire steps involved in RAG.
+                            It begins with uploading documents, which are then divided into smaller chunks and indexed using embeddings for efficient retrieval.
+                            When a query is received, the system performs a similarity search to fetch the most relevant information. 
+                            These retrieved chunks are passed to a generative AI model to create accurate, context-aware responses.
                     </p>
                 """
         )
         st.link_button(
-            url="Document_Chunking",
+            url="Demystify_RAG",
             label="**LAUNCH**",
             type="primary",
             use_container_width=True,
@@ -92,14 +89,11 @@ with col12:
         st.html(
             f"""
                     <p style='font-family: {font_family};text-align: center'>
-                        <ul>
-                            One of the most common use cases of Generative AI is RAG (Retrieval Augmented Generation).
-                            RAG applications are tools that combine AI language models with real-world information sources to give better answers. 
-                            They fetch data from documents, websites, or databases and then generate answers using AI. 
+                            One of the most common use cases of Generative AI is RAG.
+                            RAG applications fetch data from documents, websites, or databases and then generate answers using AI. 
                             This makes them more accurate and up-to-date compared to regular AI models that rely only on training data. 
                             RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
                             It bridges the gap between advanced AI and real-time, fact-based knowledge.
-                        </ul>
                     </p>
                 """
         )

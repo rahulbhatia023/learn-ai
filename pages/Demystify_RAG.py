@@ -70,20 +70,25 @@ st.html(
         [title="Show password text"] {
             display: none;
         }
+        
+        .custom-container {
+            background-color: #f0f8ff; /* Light blue */
+        }
     </style>
     """
 )
 
 st.html(
-    f"<h2 style='font-family:Poppins; color:#C4DAD2; text-align: center'>Document Chunking</h2><br/>"
+    f"<h1 style='font-family:Poppins; color:#C4DAD2; text-align: center'>Demystify RAG</h1><br/>"
 )
 
-with st.container():
+with st.container(border=True):
+
     # PAGE-1: Upload PDF
 
     if st.session_state[navigation_page_key] == 1:
         st.html(
-            "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Upload PDF File</h3>"
+            "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Upload Document</h3>"
         )
 
         if uploaded_file := st.file_uploader(
@@ -118,7 +123,7 @@ with st.container():
     elif st.session_state[navigation_page_key] == 2:
         if st.session_state[uploaded_file_key]:
             st.html(
-                "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Chunking Options</h3>"
+                "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Create Document Chunks</h3>"
             )
 
             if chunk_size := st.number_input(label="Chunk size", value=4000):
@@ -166,7 +171,7 @@ with st.container():
     elif st.session_state[navigation_page_key] == 3:
         if st.session_state[chunks_key]:
             st.html(
-                "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Create Embeddings</h3>"
+                "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Generate Chunks Embeddings</h3>"
             )
 
             if not st.session_state[openai_api_key]:
@@ -187,7 +192,7 @@ with st.container():
                 _, col2, _ = st.columns([1, 1, 1])
                 with col2:
                     if st.button(
-                        label="Create embeddings",
+                        label="Generate",
                         type="secondary",
                         use_container_width=True,
                     ):
