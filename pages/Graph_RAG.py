@@ -4,7 +4,7 @@ import time
 import streamlit as st
 from langchain.prompts import Prompt
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.graphs import MemgraphGraph
+from langchain_community.graphs import Neo4jGraph
 from langchain_community.vectorstores import FAISS
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -32,12 +32,28 @@ openai_api_key = "OPENAI_API_KEY"
 if openai_api_key not in st.session_state:
     st.session_state[openai_api_key] = ""
 
-user_query_key = "dc_user_query"
+neo4j_uri_key = "NEO4J_URI"
+if neo4j_uri_key not in st.session_state:
+    st.session_state[neo4j_uri_key] = ""
+
+neo4j_username_key = "NEO4J_USERNAME"
+if neo4j_username_key not in st.session_state:
+    st.session_state[neo4j_username_key] = ""
+
+neo4j_password_key = "NEO4J_PASSWORD"
+if neo4j_password_key not in st.session_state:
+    st.session_state[neo4j_password_key] = ""
+
+neo4j_database_key = "NEO4J_DATABASE"
+if neo4j_database_key not in st.session_state:
+    st.session_state[neo4j_database_key] = "neo4j"
+
+user_query_key = "gr_user_query"
 if user_query_key not in st.session_state:
     st.session_state[user_query_key] = ""
 
 st.set_page_config(
-    page_title="Document Chunking",
+    page_title="Graph RAG",
     page_icon="🤖",
     initial_sidebar_state="collapsed",
 )
@@ -183,7 +199,7 @@ with st.container(border=True):
                                 relationships.append(flattened_relationship)
                             st.table(relationships)
 
-    # PAGE-3: Visualize knowledge graph
+    # PAGE-3: Store graph documents to Graph DB
 
     elif st.session_state[navigation_page_key] == 3:
         if st.session_state[graph_documents_key]:
@@ -191,13 +207,88 @@ with st.container(border=True):
                 "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Load graph documents to Graph DB</h3>"
             )
 
-            st.info(body="Loading..")
+            # NEO4J_URI
 
-            graph = MemgraphGraph(
-                url="bolt://localhost:7687", username="", password=""
-            )
+            if not st.session_state[neo4j_uri_key]:
+                if neo4j_uri_key in st.secrets and st.secrets[neo4j_uri_key]:
+                    st.session_state[neo4j_uri_key] = st.secrets[neo4j_uri_key]
+                else:
+                    st.error(f"Please enter {neo4j_uri_key}", icon="🚨")
 
-            st.info(body="Loaded")
+            if neo4j_uri := st.text_input(
+                label=f"{neo4j_uri_key}", value=st.session_state[neo4j_uri_key]
+            ):
+                st.session_state[neo4j_uri_key] = neo4j_uri
+
+            # NEO4J_USERNAME
+
+            if not st.session_state[neo4j_username_key]:
+                if neo4j_username_key in st.secrets and st.secrets[neo4j_username_key]:
+                    st.session_state[neo4j_username_key] = st.secrets[
+                        neo4j_username_key
+                    ]
+                else:
+                    st.error(f"Please enter {neo4j_username_key}", icon="🚨")
+
+            if neo4j_username := st.text_input(
+                label=f"{neo4j_username_key}",
+                value=st.session_state[neo4j_username_key],
+            ):
+                st.session_state[neo4j_username_key] = neo4j_username
+
+            # NEO4J_PASSWORD
+
+            if not st.session_state[neo4j_password_key]:
+                if neo4j_password_key in st.secrets and st.secrets[neo4j_password_key]:
+                    st.session_state[neo4j_password_key] = st.secrets[
+                        neo4j_password_key
+                    ]
+                else:
+                    st.error(f"Please enter {neo4j_password_key}", icon="🚨")
+
+            if neo4j_password := st.text_input(
+                label=f"{neo4j_password_key}",
+                value=st.session_state[neo4j_password_key],
+                type="password",
+            ):
+                st.session_state[neo4j_password_key] = neo4j_password
+
+            # NEO4J_DATABASE
+
+            if not st.session_state[neo4j_database_key]:
+                if neo4j_database_key in st.secrets and st.secrets[neo4j_database_key]:
+                    st.session_state[neo4j_database_key] = st.secrets[
+                        neo4j_database_key
+                    ]
+                else:
+                    st.error(f"Please enter {neo4j_database_key}", icon="🚨")
+
+            if neo4j_database := st.text_input(
+                label=f"{neo4j_database_key}",
+                value=st.session_state[neo4j_database_key],
+            ):
+                st.session_state[neo4j_database_key] = neo4j_database
+
+            st.html("<br/>")
+
+            _, col2, _ = st.columns([1, 1, 1])
+
+            with col2:
+                if st.button(
+                    label="Load",
+                    type="secondary",
+                    use_container_width=True,
+                ):
+                    graph = Neo4jGraph(
+                        url=neo4j_uri,
+                        username=neo4j_username,
+                        password=neo4j_password,
+                        database=neo4j_database,
+                    )
+
+                    graph.add_graph_documents(
+                        graph_documents=st.session_state[graph_documents_key]
+                    )
 
     # PAGE-4: Similarity Search
 

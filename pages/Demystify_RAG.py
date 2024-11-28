@@ -52,7 +52,7 @@ if similar_chunks_key not in st.session_state:
     st.session_state[similar_chunks_key] = []
 
 st.set_page_config(
-    page_title="Document Chunking",
+    page_title="Demystify RAG",
     page_icon="🤖",
     initial_sidebar_state="collapsed",
 )
