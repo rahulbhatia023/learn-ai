@@ -56,9 +56,31 @@ st.html(
 
 st.html(f"<h1 style='{page_header_style}'>{page_header}</h1>")
 
-col11, col12, _ = st.columns([1, 1, 1], gap="large")
+graph_rag, demystify_rag, simple_rag = st.columns([1, 1, 1], gap="large")
 
-with col11:
+with graph_rag:
+    with st.container(border=True):
+        st.html(f"<h3 style='{card_title_style}'>Graph RAG</h1>")
+        st.image(image="static/images/graph-rag-banner.jpg", use_container_width=True)
+        st.html(
+            f"""
+                    <p style='font-family: {font_family};text-align: center'>
+                        One of the advanced use cases of Generative AI is Graph RAG.
+                        Graph RAG organizes data as nodes and edges in a graph, capturing relationships between concepts.
+                        This enables more context-aware and accurate responses compared to traditional RAG.
+                        It is ideal for tasks like complex reasoning, exploring knowledge connections, or semantic research.
+                        Graph RAG bridges the gap between relational data and AI-driven, knowledge-based insights.
+                    </p>
+                """
+        )
+        st.link_button(
+            url="Graph_RAG",
+            label="**LAUNCH**",
+            type="primary",
+            use_container_width=True,
+        )
+
+with demystify_rag:
     with st.container(border=True):
         st.html(f"<h3 style='{card_title_style}'>Demystify RAG</h1>")
         st.image(
@@ -67,11 +89,11 @@ with col11:
         st.html(
             f"""
                     <p style='font-family: {font_family};text-align: center'>
-                            This app gives you a visual representation of how RAG works.
-                            It takes you to the tour of entire steps involved in RAG.
-                            It begins with uploading documents, which are then divided into smaller chunks and indexed using embeddings for efficient retrieval.
-                            When a query is received, the system performs a similarity search to fetch the most relevant information. 
-                            These retrieved chunks are passed to a generative AI model to create accurate, context-aware responses.
+                        This app gives you a visual representation of how RAG works.
+                        It takes you to the tour of entire steps involved in RAG.
+                        It begins with uploading documents, which are then divided into smaller chunks and indexed using embeddings for efficient retrieval.
+                        When a query is received, the system performs a similarity search to fetch the most relevant information. 
+                        These retrieved chunks are passed to a generative AI model to create accurate, context-aware responses.
                     </p>
                 """
         )
@@ -82,18 +104,18 @@ with col11:
             use_container_width=True,
         )
 
-with col12:
+with simple_rag:
     with st.container(border=True):
         st.html(f"<h3 style='{card_title_style}'>Simple RAG</h1>")
         st.image(image="static/images/simple-rag-banner.jpg", use_container_width=True)
         st.html(
             f"""
                     <p style='font-family: {font_family};text-align: center'>
-                            One of the most common use cases of Generative AI is RAG.
-                            RAG applications fetch data from documents, websites, or databases and then generate answers using AI. 
-                            This makes them more accurate and up-to-date compared to regular AI models that rely only on training data. 
-                            RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
-                            It bridges the gap between advanced AI and real-time, fact-based knowledge.
+                        One of the most common use cases of Generative AI is RAG.
+                        RAG applications fetch data from documents, websites, or databases and then generate answers using AI. 
+                        This makes them more accurate and up-to-date compared to regular AI models that rely only on training data. 
+                        RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
+                        It bridges the gap between advanced AI and real-time, fact-based knowledge.
                     </p>
                 """
         )

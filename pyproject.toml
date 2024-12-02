@@ -15,6 +15,10 @@ langgraph = "^0.2.48"
 langchain-community = "^0.3.7"
 pypdf = "^5.1.0"
 faiss-cpu = "^1.9.0"
+langchain-experimental = "^0.3.3"
+graphviz = "^0.20.3"
+neo4j = "^5.27.0"
+langchain-neo4j = "^0.1.1"
 
 
 [build-system]
