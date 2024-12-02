@@ -65,11 +65,11 @@ with graph_rag:
         st.html(
             f"""
                     <p style='font-family: {font_family};text-align: center'>
-                            One of the most common use cases of Generative AI is RAG.
-                            RAG applications fetch data from documents, websites, or databases and then generate answers using AI. 
-                            This makes them more accurate and up-to-date compared to regular AI models that rely only on training data. 
-                            RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
-                            It bridges the gap between advanced AI and real-time, fact-based knowledge.
+                        One of the advanced use cases of Generative AI is Graph RAG.
+                        Graph RAG organizes data as nodes and edges in a graph, capturing relationships between concepts.
+                        This enables more context-aware and accurate responses compared to traditional RAG.
+                        It is ideal for tasks like complex reasoning, exploring knowledge connections, or semantic research.
+                        Graph RAG bridges the gap between relational data and AI-driven, knowledge-based insights.
                     </p>
                 """
         )
@@ -89,11 +89,11 @@ with demystify_rag:
         st.html(
             f"""
                     <p style='font-family: {font_family};text-align: center'>
-                            This app gives you a visual representation of how RAG works.
-                            It takes you to the tour of entire steps involved in RAG.
-                            It begins with uploading documents, which are then divided into smaller chunks and indexed using embeddings for efficient retrieval.
-                            When a query is received, the system performs a similarity search to fetch the most relevant information. 
-                            These retrieved chunks are passed to a generative AI model to create accurate, context-aware responses.
+                        This app gives you a visual representation of how RAG works.
+                        It takes you to the tour of entire steps involved in RAG.
+                        It begins with uploading documents, which are then divided into smaller chunks and indexed using embeddings for efficient retrieval.
+                        When a query is received, the system performs a similarity search to fetch the most relevant information. 
+                        These retrieved chunks are passed to a generative AI model to create accurate, context-aware responses.
                     </p>
                 """
         )
@@ -111,11 +111,11 @@ with simple_rag:
         st.html(
             f"""
                     <p style='font-family: {font_family};text-align: center'>
-                            One of the most common use cases of Generative AI is RAG.
-                            RAG applications fetch data from documents, websites, or databases and then generate answers using AI. 
-                            This makes them more accurate and up-to-date compared to regular AI models that rely only on training data. 
-                            RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
-                            It bridges the gap between advanced AI and real-time, fact-based knowledge.
+                        One of the most common use cases of Generative AI is RAG.
+                        RAG applications fetch data from documents, websites, or databases and then generate answers using AI. 
+                        This makes them more accurate and up-to-date compared to regular AI models that rely only on training data. 
+                        RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
+                        It bridges the gap between advanced AI and real-time, fact-based knowledge.
                     </p>
                 """
         )
