@@ -202,13 +202,14 @@ elif st.session_state[navigation_page_key] == 3:
                         if not st.session_state[user_query_key]:
                             st.error("Please enter user query.", icon="🚨")
                         else:
+                            chunks = st.session_state[chunks_key]
+
                             # BM25
 
                             tokenized_query = st.session_state[user_query_key].split()
 
                             chunks_content = [
-                                item["chunk"].page_content
-                                for item in st.session_state[chunks_key]
+                                item["chunk"].page_content for item in chunks
                             ]
 
                             tokenized_chunks_content = [
@@ -218,7 +219,7 @@ elif st.session_state[navigation_page_key] == 3:
 
                             chunks_with_bm25_scores = list(
                                 zip(
-                                    st.session_state[chunks_key],
+                                    chunks,
                                     BM25Okapi(tokenized_chunks_content).get_scores(
                                         query=tokenized_query
                                     ),
@@ -226,10 +227,7 @@ elif st.session_state[navigation_page_key] == 3:
                             )
 
                             bm25_retriever = BM25Retriever.from_documents(
-                                documents=[
-                                    item["chunk"]
-                                    for item in st.session_state[chunks_key]
-                                ]
+                                documents=[item["chunk"] for item in chunks]
                             )
 
                             bm25_similar_documents = bm25_retriever.invoke(
@@ -249,17 +247,16 @@ elif st.session_state[navigation_page_key] == 3:
                                             chunk_with_bm25_score
                                         )
 
-                            st.session_state[bm25_similar_documents_key] = (
-                                bm25_similar_documents_with_scores
+                            st.session_state[bm25_similar_documents_key] = sorted(
+                                bm25_similar_documents_with_scores,
+                                key=lambda x: x[1],
+                                reverse=True,
                             )
 
                             # vector search
 
                             vector_store = FAISS.from_documents(
-                                documents=[
-                                    item["chunk"]
-                                    for item in st.session_state[chunks_key]
-                                ],
+                                documents=[item["chunk"] for item in chunks],
                                 embedding=OpenAIEmbeddings(
                                     openai_api_key=SecretStr(
                                         os.environ["OPENAI_API_KEY"]
@@ -294,7 +291,7 @@ elif st.session_state[navigation_page_key] == 3:
                                             0
                                         ].page_content
                                     ):
-                                        for chunk_info in st.session_state[chunks_key]:
+                                        for chunk_info in chunks:
                                             if (
                                                 chunk_info["chunk"].page_content
                                                 == chunk_with_vector_search_score[
@@ -309,8 +306,10 @@ elif st.session_state[navigation_page_key] == 3:
                                                     chunk_info
                                                 )
 
-                            st.session_state[vs_similar_documents_key] = (
-                                vector_store_similar_documents_with_scores
+                            st.session_state[vs_similar_documents_key] = sorted(
+                                vector_store_similar_documents_with_scores,
+                                key=lambda x: x["chunk_score"],
+                                reverse=True,
                             )
 
             if (
