@@ -1,9 +1,9 @@
 import os
 import tempfile
 
+import numpy as np
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.retrievers import BM25Retriever
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -40,13 +40,17 @@ user_query_key = "bm25vs_user_query"
 if user_query_key not in st.session_state:
     st.session_state[user_query_key] = ""
 
-bm25_similar_documents_key = "bm25vs_bm25_documents"
-if bm25_similar_documents_key not in st.session_state:
-    st.session_state[bm25_similar_documents_key] = None
+chunks_with_bm25_scores_key = "bm25vs_chunks_with_bm25_scores"
+if chunks_with_bm25_scores_key not in st.session_state:
+    st.session_state[chunks_with_bm25_scores_key] = None
 
-vs_similar_documents_key = "bm25vs_vs_documents"
-if vs_similar_documents_key not in st.session_state:
-    st.session_state[vs_similar_documents_key] = None
+chunks_with_vector_scores_key = "bm25vs_chunks_with_vector_scores"
+if chunks_with_vector_scores_key not in st.session_state:
+    st.session_state[chunks_with_vector_scores_key] = None
+
+chunks_with_rrf_scores_key = "bm25vs_chunks_with_rrf_scores"
+if chunks_with_rrf_scores_key not in st.session_state:
+    st.session_state[chunks_with_rrf_scores_key] = None
 
 st.set_page_config(
     page_title="BM25 vs Vector Search",
@@ -181,7 +185,7 @@ elif st.session_state[navigation_page_key] == 3:
 
             with col2:
                 st.html(
-                    "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Similarity Search</h3>"
+                    "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Similarity Search Scores</h3>"
                 )
 
                 if user_query := st.text_input(
@@ -217,136 +221,164 @@ elif st.session_state[navigation_page_key] == 3:
                                 for chunk_content in chunks_content
                             ]
 
+                            bm25_scores = BM25Okapi(
+                                tokenized_chunks_content
+                            ).get_scores(query=tokenized_query)
+
+                            bm25_ranks = (
+                                len(bm25_scores) - bm25_scores.argsort().argsort()
+                            )
+
                             chunks_with_bm25_scores = list(
-                                zip(
-                                    chunks,
-                                    BM25Okapi(tokenized_chunks_content).get_scores(
-                                        query=tokenized_query
-                                    ),
-                                )
+                                zip(chunks, bm25_scores, bm25_ranks)
                             )
 
-                            bm25_retriever = BM25Retriever.from_documents(
-                                documents=[item["chunk"] for item in chunks]
+                            st.session_state[chunks_with_bm25_scores_key] = (
+                                chunks_with_bm25_scores
                             )
 
-                            bm25_similar_documents = bm25_retriever.invoke(
-                                input=st.session_state[user_query_key]
-                            )
-
-                            bm25_similar_documents_with_scores = []
-                            for bm25_similar_document in bm25_similar_documents:
-                                for chunk_with_bm25_score in chunks_with_bm25_scores:
-                                    if (
-                                        bm25_similar_document.page_content
-                                        == chunk_with_bm25_score[0][
-                                            "chunk"
-                                        ].page_content
-                                    ):
-                                        bm25_similar_documents_with_scores.append(
-                                            chunk_with_bm25_score
-                                        )
-
-                            st.session_state[bm25_similar_documents_key] = sorted(
-                                bm25_similar_documents_with_scores,
-                                key=lambda x: x[1],
-                                reverse=True,
-                            )
-
-                            # vector search
+                            # Vector Search
 
                             vector_store = FAISS.from_documents(
                                 documents=[item["chunk"] for item in chunks],
                                 embedding=OpenAIEmbeddings(
                                     openai_api_key=SecretStr(
                                         os.environ["OPENAI_API_KEY"]
-                                    )
+                                    ),
+                                    model="text-embedding-3-large",
                                 ),
                             )
 
-                            chunks_with_vector_search_scores = (
-                                vector_store.similarity_search_with_score(
-                                    query=st.session_state[user_query_key]
-                                )
+                            vector_scores = vector_store.similarity_search_with_score(
+                                query=st.session_state[user_query_key],
+                                k=len(chunks),
                             )
 
-                            vector_store_retriever = vector_store.as_retriever()
-
-                            vector_store_similar_documents = (
-                                vector_store_retriever.invoke(
-                                    input=st.session_state[user_query_key]
-                                )
+                            vector_ranks = (
+                                len(vector_scores)
+                                - np.array(list(map(lambda tup: tup[1], vector_scores)))
+                                .argsort()
+                                .argsort()
                             )
 
-                            vector_store_similar_documents_with_scores = []
-                            for (
-                                vector_store_similar_document
-                            ) in vector_store_similar_documents:
-                                for (
-                                    chunk_with_vector_search_score
-                                ) in chunks_with_vector_search_scores:
+                            vector_scores = zip(vector_scores, vector_ranks)
+
+                            chunks_with_vector_scores = []
+                            for chunk_with_vector_score in vector_scores:
+                                for chunk in chunks:
                                     if (
-                                        vector_store_similar_document.page_content
-                                        == chunk_with_vector_search_score[
-                                            0
-                                        ].page_content
+                                        chunk["chunk"].page_content
+                                        == chunk_with_vector_score[0][0].page_content
                                     ):
-                                        for chunk_info in chunks:
-                                            if (
-                                                chunk_info["chunk"].page_content
-                                                == chunk_with_vector_search_score[
-                                                    0
-                                                ].page_content
-                                            ):
-                                                chunk_info["chunk_score"] = (
-                                                    chunk_with_vector_search_score[1]
-                                                )
+                                        chunks_with_vector_scores.append(
+                                            (
+                                                chunk,
+                                                chunk_with_vector_score[0][1],
+                                                chunk_with_vector_score[1],
+                                            )
+                                        )
 
-                                                vector_store_similar_documents_with_scores.append(
-                                                    chunk_info
-                                                )
+                            st.session_state[chunks_with_vector_scores_key] = sorted(
+                                chunks_with_vector_scores,
+                                key=lambda x: x[0]["chunk_id"],
+                            )
 
-                            st.session_state[vs_similar_documents_key] = sorted(
-                                vector_store_similar_documents_with_scores,
-                                key=lambda x: x["chunk_score"],
-                                reverse=True,
+                            # RRF Ranks
+
+                            def rrf_score(
+                                keyword_rank: int, semantic_rank: int
+                            ) -> float:
+                                k = 60
+                                return 1 / (k + keyword_rank) + 1 / (k + semantic_rank)
+
+                            rrf_scores = [
+                                (chunk, rrf_score(bm25_rank, vector_rank))
+                                for (chunk, _, bm25_rank), (_, _, vector_rank) in zip(
+                                    st.session_state[chunks_with_bm25_scores_key],
+                                    st.session_state[chunks_with_vector_scores_key],
+                                )
+                            ]
+
+                            rrf_ranks = (
+                                len(rrf_scores)
+                                - np.array(list(map(lambda tup: tup[1], rrf_scores)))
+                                .argsort()
+                                .argsort()
+                            )
+
+                            chunks_with_rrf_scores = zip(rrf_scores, rrf_ranks)
+
+                            st.session_state[chunks_with_rrf_scores_key] = sorted(
+                                [
+                                    (
+                                        chunk,
+                                        rrf_score,
+                                        rrf_rank,
+                                    )
+                                    for (
+                                        chunk,
+                                        rrf_score,
+                                    ), rrf_rank in chunks_with_rrf_scores
+                                ],
+                                key=lambda x: x[0]["chunk_id"],
                             )
 
             if (
-                st.session_state[bm25_similar_documents_key]
-                and st.session_state[vs_similar_documents_key]
+                st.session_state[chunks_with_bm25_scores_key]
+                and st.session_state[chunks_with_vector_scores_key]
             ):
                 st.html("<br/>")
 
-                bm25, vector_search = st.columns([1, 1])
+                bm25, vector_search, rerank = st.columns([1, 1, 1])
 
                 with bm25:
                     with st.container(border=True):
                         st.html(
-                            "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>BM25</p>"
+                            "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>BM25</h3>"
                         )
 
-                        for bm25_similar_document in st.session_state[
-                            bm25_similar_documents_key
+                        for chunk_with_bm25_score in st.session_state[
+                            chunks_with_bm25_scores_key
                         ]:
                             with st.expander(
-                                f"CHUNK: {bm25_similar_document[0]["chunk_id"]}, SCORE: {bm25_similar_document[1]}"
+                                f"CHUNK: {chunk_with_bm25_score[0]["chunk_id"]}, SCORE: {chunk_with_bm25_score[1]}, RANK: {chunk_with_bm25_score[2]}"
                             ):
-                                st.text(bm25_similar_document[0]["chunk"].page_content)
+                                st.text(chunk_with_bm25_score[0]["chunk"].page_content)
 
                 with vector_search:
                     with st.container(border=True):
                         st.html(
-                            "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>Vector Search</p>"
+                            "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Vector Search</h3>"
                         )
 
-                        for vs_similar_document in st.session_state[
-                            vs_similar_documents_key
+                        for chunk_with_vector_score in st.session_state[
+                            chunks_with_vector_scores_key
                         ]:
                             with st.expander(
-                                f"CHUNK: {vs_similar_document["chunk_id"]}, SCORE: {vs_similar_document["chunk_score"]}"
+                                f"CHUNK: {chunk_with_vector_score[0]["chunk_id"]}, SCORE: {chunk_with_vector_score[1]}, RANK: {chunk_with_vector_score[2]}"
                             ):
-                                st.text(vs_similar_document["chunk"].page_content)
+                                st.text(
+                                    chunk_with_vector_score[0]["chunk"].page_content
+                                )
+
+                with rerank:
+                    with st.container(border=True):
+                        st.html(
+                            "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Reciprocal Rank Fusion (RRF)</h3>"
+                        )
+
+                        for chunk_with_rrf_score in st.session_state[
+                            chunks_with_rrf_scores_key
+                        ]:
+                            with st.expander(
+                                f"CHUNK: {chunk_with_rrf_score[0]["chunk_id"]}, SCORE: {chunk_with_rrf_score[1]}, RANK: {chunk_with_rrf_score[2]}"
+                            ):
+                                st.text(chunk_with_rrf_score[0]["chunk"].page_content)
+
+# PAGE-4: Re-Ranking
+
+elif st.session_state[navigation_page_key] == 4:
+    pass
 
 _, mid, _ = st.columns([1, 3, 1])
 with mid:
