@@ -56,7 +56,31 @@ st.html(
 
 st.html(f"<h1 style='{page_header_style}'>{page_header}</h1>")
 
-graph_rag, demystify_rag, simple_rag = st.columns([1, 1, 1], gap="large")
+bm25, graph_rag, demystify_rag = st.columns([1, 1, 1], gap="large")
+
+simple_rag, _, _ = st.columns([1, 1, 1], gap="large")
+
+with bm25:
+    with st.container(border=True):
+        st.html(f"<h3 style='{card_title_style}'>BM25 vs Vector Search</h1>")
+        st.image(image="static/images/graph-rag-banner.jpg", use_container_width=True)
+        st.html(
+            f"""
+                    <p style='font-family: {font_family};text-align: center'>
+                        One of the advanced use cases of Generative AI is Graph RAG.
+                        Graph RAG organizes data as nodes and edges in a graph, capturing relationships between concepts.
+                        This enables more context-aware and accurate responses compared to traditional RAG.
+                        It is ideal for tasks like complex reasoning, exploring knowledge connections, or semantic research.
+                        Graph RAG bridges the gap between relational data and AI-driven, knowledge-based insights.
+                    </p>
+                """
+        )
+        st.link_button(
+            url="BM25_vs_Vector_Search",
+            label="**LAUNCH**",
+            type="primary",
+            use_container_width=True,
+        )
 
 with graph_rag:
     with st.container(border=True):

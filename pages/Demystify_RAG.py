@@ -70,10 +70,6 @@ st.html(
         [title="Show password text"] {
             display: none;
         }
-        
-        .custom-container {
-            background-color: #f0f8ff; /* Light blue */
-        }
     </style>
     """
 )
