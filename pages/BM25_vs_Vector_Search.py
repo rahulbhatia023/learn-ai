@@ -1,11 +1,13 @@
 import os
 import tempfile
+import time
 
 import numpy as np
 import streamlit as st
+from langchain.prompts import Prompt
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import SecretStr
 from rank_bm25 import BM25Okapi
@@ -283,53 +285,13 @@ elif st.session_state[navigation_page_key] == 3:
                                 key=lambda x: x[0]["chunk_id"],
                             )
 
-                            # RRF Ranks
-
-                            def rrf_score(
-                                keyword_rank: int, semantic_rank: int
-                            ) -> float:
-                                k = 60
-                                return 1 / (k + keyword_rank) + 1 / (k + semantic_rank)
-
-                            rrf_scores = [
-                                (chunk, rrf_score(bm25_rank, vector_rank))
-                                for (chunk, _, bm25_rank), (_, _, vector_rank) in zip(
-                                    st.session_state[chunks_with_bm25_scores_key],
-                                    st.session_state[chunks_with_vector_scores_key],
-                                )
-                            ]
-
-                            rrf_ranks = (
-                                len(rrf_scores)
-                                - np.array(list(map(lambda tup: tup[1], rrf_scores)))
-                                .argsort()
-                                .argsort()
-                            )
-
-                            chunks_with_rrf_scores = zip(rrf_scores, rrf_ranks)
-
-                            st.session_state[chunks_with_rrf_scores_key] = sorted(
-                                [
-                                    (
-                                        chunk,
-                                        rrf_score,
-                                        rrf_rank,
-                                    )
-                                    for (
-                                        chunk,
-                                        rrf_score,
-                                    ), rrf_rank in chunks_with_rrf_scores
-                                ],
-                                key=lambda x: x[0]["chunk_id"],
-                            )
-
             if (
                 st.session_state[chunks_with_bm25_scores_key]
                 and st.session_state[chunks_with_vector_scores_key]
             ):
                 st.html("<br/>")
 
-                bm25, vector_search, rerank = st.columns([1, 1, 1])
+                bm25, vector_search = st.columns([1, 1])
 
                 with bm25:
                     with st.container(border=True):
@@ -361,24 +323,159 @@ elif st.session_state[navigation_page_key] == 3:
                                     chunk_with_vector_score[0]["chunk"].page_content
                                 )
 
-                with rerank:
-                    with st.container(border=True):
-                        st.html(
-                            "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Reciprocal Rank Fusion (RRF)</h3>"
-                        )
-
-                        for chunk_with_rrf_score in st.session_state[
-                            chunks_with_rrf_scores_key
-                        ]:
-                            with st.expander(
-                                f"CHUNK: {chunk_with_rrf_score[0]["chunk_id"]}, SCORE: {chunk_with_rrf_score[1]}, RANK: {chunk_with_rrf_score[2]}"
-                            ):
-                                st.text(chunk_with_rrf_score[0]["chunk"].page_content)
-
 # PAGE-4: Re-Ranking
 
 elif st.session_state[navigation_page_key] == 4:
-    pass
+    if (
+        st.session_state[chunks_with_bm25_scores_key]
+        and st.session_state[chunks_with_vector_scores_key]
+    ):
+        with st.container(border=True):
+            _, col2, _ = st.columns([1, 4, 1])
+
+            with col2:
+                st.html(
+                    "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Reciprocal Rank Fusion (RRF)</h3>"
+                )
+
+                st.html("<br/>")
+
+                def rrf_score(keyword_rank: int, semantic_rank: int) -> float:
+                    k = 60
+                    return 1 / (k + keyword_rank) + 1 / (k + semantic_rank)
+
+                rrf_scores = [
+                    (chunk, rrf_score(bm25_rank, vector_rank))
+                    for (chunk, _, bm25_rank), (_, _, vector_rank) in zip(
+                        st.session_state[chunks_with_bm25_scores_key],
+                        st.session_state[chunks_with_vector_scores_key],
+                    )
+                ]
+
+                rrf_ranks = (
+                    len(rrf_scores)
+                    - np.array(list(map(lambda tup: tup[1], rrf_scores)))
+                    .argsort()
+                    .argsort()
+                )
+
+                chunks_with_rrf_scores = zip(rrf_scores, rrf_ranks)
+
+                st.session_state[chunks_with_rrf_scores_key] = sorted(
+                    [
+                        (
+                            chunk,
+                            rrf_score,
+                            rrf_rank,
+                        )
+                        for (
+                            chunk,
+                            rrf_score,
+                        ), rrf_rank in chunks_with_rrf_scores
+                    ],
+                    key=lambda x: x[0]["chunk_id"],
+                )
+
+                for chunk_with_rrf_score in st.session_state[
+                    chunks_with_rrf_scores_key
+                ]:
+                    with st.expander(
+                        f"CHUNK: {chunk_with_rrf_score[0]["chunk_id"]}, SCORE: {chunk_with_rrf_score[1]}, RANK: {chunk_with_rrf_score[2]}"
+                    ):
+                        st.text(chunk_with_rrf_score[0]["chunk"].page_content)
+
+# PAGE-5: Generate Response
+
+elif st.session_state[navigation_page_key] == 5:
+    if st.session_state[chunks_with_rrf_scores_key]:
+        st.html(
+            "<h3 style='color:#E9EFEC; font-family:Poppins; text-align: center'>Generate Response</h3>"
+        )
+
+        col1, col2 = st.columns([1, 1])
+
+        with col1:
+            with st.container(border=True):
+                st.html(
+                    "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>LLM Input</p>"
+                )
+
+                with st.container(border=True):
+                    st.html(
+                        "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>User Query</p>"
+                    )
+                    st.write(st.session_state[user_query_key])
+
+                with st.container(border=True):
+                    st.html(
+                        "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>LLM Context</p>"
+                    )
+
+                    top_4_chunks = sorted(
+                        st.session_state[chunks_with_rrf_scores_key], key=lambda x: x[2]
+                    )[0:4]
+
+                    for chunk, rrf_score, rrf_rank in top_4_chunks:
+                        with st.expander(
+                            f"CHUNK: {chunk["chunk_id"]}, SCORE: {rrf_score}, RANK: {rrf_rank}"
+                        ):
+                            st.text(chunk["chunk"].page_content)
+
+        with col2:
+            with st.container(border=True):
+                st.html(
+                    "<p style='color:#E9EFEC; font-family:Poppins; text-align: center'>LLM Output</p>"
+                )
+
+                response = None
+
+                col1, col2, col3 = st.columns([1, 3, 1])
+
+                with col2:
+                    if st.button(
+                        label="Generate Response",
+                        type="secondary",
+                        use_container_width=True,
+                    ):
+                        llm = ChatOpenAI(
+                            model_name="gpt-4o",
+                            openai_api_key=SecretStr(os.environ["OPENAI_API_KEY"]),
+                        )
+
+                        prompt = Prompt.from_template(
+                            """
+                            You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Use three sentences maximum and keep the answer concise.
+
+                            Question: {question} 
+
+                            Context: {context} 
+
+                            Answer:
+                            """
+                        )
+
+                        rag_chain = prompt | llm
+
+                        llm_context = "\n\n".join(
+                            chunk["chunk"].page_content for chunk, _, _ in top_4_chunks
+                        )
+
+                        response = rag_chain.invoke(
+                            {
+                                "context": llm_context,
+                                "question": st.session_state[user_query_key],
+                            }
+                        ).content
+
+                def stream_data():
+                    for word in response.split(" "):
+                        yield word + " "
+                        time.sleep(0.04)
+
+                if response:
+                    with st.container(border=True):
+                        st.write_stream(stream_data)
+                        st.balloons()
 
 _, mid, _ = st.columns([1, 3, 1])
 with mid:
@@ -394,6 +491,17 @@ with mid:
     elif st.session_state[navigation_page_key] == 2:
         if not st.session_state[chunks_key]:
             next_button_disabled = True
+    elif st.session_state[navigation_page_key] == 3:
+        if (
+            not st.session_state[chunks_with_bm25_scores_key]
+            or not st.session_state[chunks_with_vector_scores_key]
+        ):
+            next_button_disabled = True
+    elif st.session_state[navigation_page_key] == 4:
+        if not st.session_state[chunks_with_rrf_scores_key]:
+            next_button_disabled = True
+    elif st.session_state[navigation_page_key] == 5:
+        next_button_disabled = True
 
     with previous_col:
         st.html("<br/>")
