@@ -1,4 +1,3 @@
-import os
 import tempfile
 import time
 
@@ -148,7 +147,7 @@ elif st.session_state[navigation_page_key] == 2:
                     text_splitter = RecursiveCharacterTextSplitter(
                         chunk_size=st.session_state[chunk_size_key],
                         chunk_overlap=st.session_state[chunk_overlap_key],
-                        separators=[""]
+                        separators=[""],
                     )
 
                     chunks = text_splitter.split_documents(
@@ -235,7 +234,7 @@ elif st.session_state[navigation_page_key] == 3:
                         vector_store = FAISS.from_documents(
                             documents=[item["chunk"] for item in chunks],
                             embedding=OpenAIEmbeddings(
-                                openai_api_key=SecretStr(os.environ["OPENAI_API_KEY"]),
+                                openai_api_key=SecretStr(st.secrets["OPENAI_API_KEY"]),
                                 model="text-embedding-3-large",
                             ),
                         )
@@ -460,7 +459,7 @@ elif st.session_state[navigation_page_key] == 5:
                     ):
                         llm = ChatOpenAI(
                             model_name="gpt-4o",
-                            openai_api_key=SecretStr(os.environ["OPENAI_API_KEY"]),
+                            openai_api_key=SecretStr(st.secrets["OPENAI_API_KEY"]),
                         )
 
                         prompt = Prompt.from_template(
