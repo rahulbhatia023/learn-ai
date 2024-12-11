@@ -1,11 +1,6 @@
 import streamlit as st
 
-page_header = "Learn AI"
-
-font_family = "Poppins"
-
-coral_color = "#FF6F61"
-light_beige_color = "#F5F5DC"
+from common.theme import *
 
 page_header_style = f"""
     font-family: {font_family};
@@ -39,7 +34,7 @@ st.html(
     """
 )
 
-st.html(f"<h1 style='{page_header_style}'>{page_header}</h1><br>")
+st.html(f"<h1 style='{page_header_style}'>Learn AI</h1><br>")
 
 
 def add_banner(banner_title, banner_image_name, banner_content, launch_button_url):
