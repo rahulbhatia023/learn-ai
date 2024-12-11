@@ -168,7 +168,7 @@ elif st.session_state[navigation_page_key] == 2:
                         container_title("Chunks")
                         for chunk_info in st.session_state[chunks_key]:
                             with st.expander(f"CHUNK: {chunk_info["chunk_id"]}"):
-                                st.write(chunk_info["chunk"].page_content)
+                                st.text(chunk_info["chunk"].page_content)
 
 # PAGE-3: Similarity Search
 
