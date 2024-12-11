@@ -38,8 +38,8 @@ st.html(f"<h1 style='{page_header_style}'>Learn AI</h1><br>")
 
 
 def add_banner(banner_title, banner_image_name, banner_content, launch_button_url):
-    with st.container(border=True):
-        image, content = st.columns([1, 2], gap="large")
+    with container("banner_container"):
+        _, image, content, _ = st.columns([0.07, 1, 2, 0.07], gap="large")
         with image:
             st.image(
                 image=f"static/images/{banner_image_name}", use_container_width=True
