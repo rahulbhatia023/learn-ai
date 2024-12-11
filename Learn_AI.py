@@ -1,5 +1,3 @@
-import streamlit as st
-
 from common.theme import *
 
 page_header_style = f"""
@@ -39,7 +37,7 @@ st.html(f"<h1 style='{page_header_style}'>Learn AI</h1><br>")
 
 def add_banner(banner_title, banner_image_name, banner_content, launch_button_url):
     with container("banner_container"):
-        _, image, content, _ = st.columns([0.07, 1, 2, 0.07], gap="large")
+        _, image, content, _ = st.columns([0.07, 1, 2, 0.07], gap="medium")
         with image:
             st.image(
                 image=f"static/images/{banner_image_name}", use_container_width=True
