@@ -148,6 +148,7 @@ elif st.session_state[navigation_page_key] == 2:
                     text_splitter = RecursiveCharacterTextSplitter(
                         chunk_size=st.session_state[chunk_size_key],
                         chunk_overlap=st.session_state[chunk_overlap_key],
+                        separators=[""]
                     )
 
                     chunks = text_splitter.split_documents(
@@ -168,7 +169,7 @@ elif st.session_state[navigation_page_key] == 2:
                         container_title("Chunks")
                         for chunk_info in st.session_state[chunks_key]:
                             with st.expander(f"CHUNK: {chunk_info["chunk_id"]}"):
-                                st.text(chunk_info["chunk"].page_content)
+                                st.write(chunk_info["chunk"].page_content)
 
 # PAGE-3: Similarity Search
 
