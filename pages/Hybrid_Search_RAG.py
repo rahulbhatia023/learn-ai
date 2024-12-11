@@ -137,7 +137,7 @@ elif st.session_state[navigation_page_key] == 2:
                 ):
                     st.session_state[chunk_overlap_key] = chunk_overlap
 
-            _, col2, _ = st.columns([1, 0.2, 1])
+            _, col2, _ = st.columns([1, 0.5, 1])
             with col2:
                 if st.button(
                     label="Create chunks",
