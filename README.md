@@ -30,6 +30,18 @@ It begins with uploading documents, which are then divided into smaller chunks a
 When a query is received, the system performs a similarity search to fetch the most relevant information. 
 These retrieved chunks are passed to a generative AI model to create accurate, context-aware responses.
 
+### [3. Graph RAG](https://learn-ai.streamlit.app/Graph_RAG)
+Graph RAG organizes data as nodes and edges in a graph, capturing relationships between concepts. 
+This enables more context-aware and accurate responses compared to traditional RAG. 
+It is ideal for tasks like complex reasoning, exploring knowledge connections, or semantic research. 
+Graph RAG bridges the gap between relational data and AI-driven, knowledge-based insights.
+
+### [4. Hybrid Search RAG](https://learn-ai.streamlit.app/Hybrid_Search_RAG)
+Hybrid Search RAG combines lexical search methods like BM25 with semantic search using embeddings. 
+This enables both precise keyword matching and deeper understanding of query intent. 
+It is ideal for tasks like multi-faceted search, document retrieval, or AI-driven assistance. 
+Hybrid Search RAG bridges the gap between traditional search techniques and modern semantic capabilities.
+
 <br>
 
 ---
