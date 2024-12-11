@@ -4,29 +4,14 @@ page_header = "Learn AI"
 
 font_family = "Poppins"
 
-dark_green_color = "#16423C"
-mild_green_color = "#6A9C89"
-light_green_color = "#C4DAD2"
+coral_color = "#FF6F61"
+light_beige_color = "#F5F5DC"
 
 page_header_style = f"""
     font-family: {font_family};
-    color: {light_green_color};
+    color: {light_beige_color};
     text-align: center;
     font-size: 60px;
-"""
-
-page_subheader_style = f"""
-    font-family: {font_family};
-    color: {light_green_color};
-    text-align: center;
-    font-size: 20px;
-"""
-
-card_title_style = f"""
-    font-family: {font_family};
-    color: {light_green_color};
-    text-align: center;
-    font-size: 30px;
 """
 
 st.set_page_config(
@@ -54,98 +39,79 @@ st.html(
     """
 )
 
-st.html(f"<h1 style='{page_header_style}'>{page_header}</h1>")
+st.html(f"<h1 style='{page_header_style}'>{page_header}</h1><br>")
 
-bm25, graph_rag, demystify_rag = st.columns([1, 1, 1], gap="large")
 
-simple_rag, _, _ = st.columns([1, 1, 1], gap="large")
-
-with bm25:
+def add_banner(banner_title, banner_image_name, banner_content, launch_button_url):
     with st.container(border=True):
-        st.html(f"<h3 style='{card_title_style}'>BM25 vs Vector Search</h1>")
-        st.image(image="static/images/graph-rag-banner.jpg", use_container_width=True)
-        st.html(
-            f"""
-                    <p style='font-family: {font_family};text-align: center'>
-                        One of the advanced use cases of Generative AI is Graph RAG.
-                        Graph RAG organizes data as nodes and edges in a graph, capturing relationships between concepts.
-                        This enables more context-aware and accurate responses compared to traditional RAG.
-                        It is ideal for tasks like complex reasoning, exploring knowledge connections, or semantic research.
-                        Graph RAG bridges the gap between relational data and AI-driven, knowledge-based insights.
-                    </p>
-                """
-        )
-        st.link_button(
-            url="BM25_vs_Vector_Search",
-            label="**LAUNCH**",
-            type="primary",
-            use_container_width=True,
-        )
+        image, content = st.columns([1, 2], gap="large")
+        with image:
+            st.image(
+                image=f"static/images/{banner_image_name}", use_container_width=True
+            )
+            st.link_button(
+                url=launch_button_url,
+                label="**LAUNCH**",
+                type="primary",
+                use_container_width=True,
+            )
+        with content:
+            st.html(
+                f"<h2 style='font-family: {font_family}; color: {coral_color};'>{banner_title}</h2>"
+            )
 
-with graph_rag:
-    with st.container(border=True):
-        st.html(f"<h3 style='{card_title_style}'>Graph RAG</h1>")
-        st.image(image="static/images/graph-rag-banner.jpg", use_container_width=True)
-        st.html(
-            f"""
-                    <p style='font-family: {font_family};text-align: center'>
-                        One of the advanced use cases of Generative AI is Graph RAG.
-                        Graph RAG organizes data as nodes and edges in a graph, capturing relationships between concepts.
-                        This enables more context-aware and accurate responses compared to traditional RAG.
-                        It is ideal for tasks like complex reasoning, exploring knowledge connections, or semantic research.
-                        Graph RAG bridges the gap between relational data and AI-driven, knowledge-based insights.
-                    </p>
-                """
-        )
-        st.link_button(
-            url="Graph_RAG",
-            label="**LAUNCH**",
-            type="primary",
-            use_container_width=True,
-        )
+            st.html(
+                f"<p style='font-family: {font_family}; font-size: 18px; text-align: justify; color: {light_beige_color}'>{banner_content}</p>"
+            )
 
-with demystify_rag:
-    with st.container(border=True):
-        st.html(f"<h3 style='{card_title_style}'>Demystify RAG</h1>")
-        st.image(
-            image="static/images/demystify-rag-banner.jpg", use_container_width=True
-        )
-        st.html(
-            f"""
-                    <p style='font-family: {font_family};text-align: center'>
-                        This app gives you a visual representation of how RAG works.
-                        It takes you to the tour of entire steps involved in RAG.
-                        It begins with uploading documents, which are then divided into smaller chunks and indexed using embeddings for efficient retrieval.
-                        When a query is received, the system performs a similarity search to fetch the most relevant information. 
-                        These retrieved chunks are passed to a generative AI model to create accurate, context-aware responses.
-                    </p>
-                """
-        )
-        st.link_button(
-            url="Demystify_RAG",
-            label="**LAUNCH**",
-            type="primary",
-            use_container_width=True,
-        )
+    st.html("<br/>")
 
-with simple_rag:
-    with st.container(border=True):
-        st.html(f"<h3 style='{card_title_style}'>Simple RAG</h1>")
-        st.image(image="static/images/simple-rag-banner.jpg", use_container_width=True)
-        st.html(
-            f"""
-                    <p style='font-family: {font_family};text-align: center'>
-                        One of the most common use cases of Generative AI is RAG.
-                        RAG applications fetch data from documents, websites, or databases and then generate answers using AI. 
-                        This makes them more accurate and up-to-date compared to regular AI models that rely only on training data. 
-                        RAG is great for tasks like answering questions, summarizing documents, or helping with research. 
-                        It bridges the gap between advanced AI and real-time, fact-based knowledge.
-                    </p>
-                """
-        )
-        st.link_button(
-            url="Simple_RAG",
-            label="**LAUNCH**",
-            type="primary",
-            use_container_width=True,
-        )
+
+add_banner(
+    banner_title="Hybrid Search RAG",
+    banner_image_name="hybrid-search-rag-banner.jpg",
+    banner_content="""
+        Hybrid Search RAG combines lexical search methods like BM25 with semantic search using embeddings.
+        This enables both precise keyword matching and deeper understanding of query intent.
+        It is ideal for tasks like multi-faceted search, document retrieval, or AI-driven assistance.
+        Hybrid Search RAG bridges the gap between traditional search techniques and modern semantic capabilities.
+    """,
+    launch_button_url="Hybrid_Search_RAG",
+)
+
+add_banner(
+    banner_title="Graph RAG",
+    banner_image_name="graph-rag-banner.jpg",
+    banner_content="""
+        Graph RAG organizes data as nodes and edges in a graph, capturing relationships between concepts.
+        This enables more context-aware and accurate responses compared to traditional RAG.
+        It is ideal for tasks like complex reasoning, exploring knowledge connections, or semantic research.
+        Graph RAG bridges the gap between relational data and AI-driven, knowledge-based insights.
+    """,
+    launch_button_url="Graph_RAG",
+)
+
+add_banner(
+    banner_title="Demystify RAG",
+    banner_image_name="demystify-rag-banner.jpg",
+    banner_content="""
+        This app gives you a visual representation of how RAG works.
+        It takes you to the tour of entire steps involved in RAG.
+        It begins with uploading documents, which are then divided into smaller chunks and indexed using embeddings for efficient retrieval.
+        When a query is received, the system performs a similarity search to fetch the most relevant information.
+        These retrieved chunks are passed to a generative AI model to create accurate, context-aware responses.
+    """,
+    launch_button_url="Demystify_RAG",
+)
+
+add_banner(
+    banner_title="Simple RAG",
+    banner_image_name="simple-rag-banner.jpg",
+    banner_content="""
+        One of the most common use cases of Generative AI is RAG.
+        RAG involves retrieving relevant information from a knowledge base and incorporating it into the generation process.
+        It is ideal for tasks like document retrieval, multi-faceted search, or AI-driven assistance.
+        RAG is effective for tasks like document retrieval, multi-faceted search, or AI-driven assistance.
+    """,
+    launch_button_url="Simple_RAG",
+)
