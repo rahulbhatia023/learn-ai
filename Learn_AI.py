@@ -61,6 +61,17 @@ def add_banner(banner_title, banner_image_name, banner_content, launch_button_ur
 
 
 add_banner(
+    banner_title="Contextual Retrieval RAG",
+    banner_image_name="contextual-retrieval-rag-banner.png",
+    banner_content="""
+        Contextual retrieval enhances traditional RAG by addressing the issue of insufficient context in individual document chunks.
+        Instead of treating chunks as isolated units, it prepends chunk-specific explanatory context to enrich their meaning.
+        This approach bridges the gap between granular document splitting and the need for meaningful context in retrieval.
+    """,
+    launch_button_url="Contextual_Retrieval_RAG",
+)
+
+add_banner(
     banner_title="Hybrid Search RAG",
     banner_image_name="hybrid-search-rag-banner.jpg",
     banner_content="""
