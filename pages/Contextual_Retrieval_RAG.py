@@ -18,15 +18,13 @@ navigation_page_key = "cr_navigation_page"
 if navigation_page_key not in st.session_state:
     st.session_state[navigation_page_key] = 1
 
-file_uploader_key = "cr_file_uploader"
-
 uploaded_file_key = "cr_uploaded_file"
 if uploaded_file_key not in st.session_state:
     st.session_state[uploaded_file_key] = None
 
-loaded_document_content_key = "cr_document_content"
-if loaded_document_content_key not in st.session_state:
-    st.session_state[loaded_document_content_key] = None
+document_file_path_key = "cr_document_file_path"
+if document_file_path_key not in st.session_state:
+    st.session_state[document_file_path_key] = None
 
 loaded_pdf_pages_key = "cr_pdf_pages"
 if loaded_pdf_pages_key not in st.session_state:
@@ -107,10 +105,7 @@ if st.session_state[navigation_page_key] == 1:
         _, col2, _ = st.columns([1, 5, 1])
         with col2:
             if uploaded_file := st.file_uploader(
-                label="Upload PDF File",
-                label_visibility="hidden",
-                type=["pdf"],
-                key=file_uploader_key,
+                label="Upload PDF File", label_visibility="hidden", type=["pdf"]
             ):
                 if (
                     not st.session_state[uploaded_file_key]
@@ -121,21 +116,12 @@ if st.session_state[navigation_page_key] == 1:
                     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
                     temp_file.write(st.session_state[uploaded_file_key].getvalue())
 
+                    st.session_state[document_file_path_key] = temp_file.name
+
                     pdf_loader = PyPDFLoader(temp_file.name)
                     pdf_pages = pdf_loader.load()
 
                     st.session_state[loaded_pdf_pages_key] = pdf_pages
-
-                    parser = LlamaParse(
-                        result_type=ResultType.TXT,
-                        api_key=st.secrets[llama_cloud_api_key],
-                        verbose=False,
-                    )
-
-                    documents = parser.load_data(temp_file.name)
-                    st.session_state[loaded_document_content_key] = " ".join(
-                        [doc.text for doc in documents]
-                    )
 
             if st.session_state[uploaded_file_key]:
                 st.success(
@@ -227,60 +213,74 @@ elif st.session_state[navigation_page_key] == 3:
                 ):
                     if not st.session_state[openai_api_key]:
                         st.error("Please enter your OpenAI API key.", icon="🚨")
-
-                    def generate_context(document: str, chunk: str) -> str:
-                        prompt = ChatPromptTemplate.from_template(
-                            """
-                                You are an AI assistant specializing in document analysis. Your task is to provide brief, relevant context for a chunk of text from the given document.
-                                Here is the document:
-                                <document>
-                                {document}
-                                </document>
-        
-                                Here is the chunk we want to situate within the whole document:
-                                <chunk>
-                                {chunk}
-                                </chunk>
-        
-                                Provide a concise context (2-3 sentences) for this chunk, considering the following guidelines:
-                                1. Identify the main topic or concept discussed in the chunk.
-                                2. Mention any relevant information or comparisons from the broader document context.
-                                3. If applicable, note how this information relates to the overall theme or purpose of the document.
-                                4. Include any key figures, dates, or percentages that provide important context.
-                                5. Do not use phrases like "This chunk discusses" or "This section provides". Instead, directly state the context.
-        
-                                Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Answer only with the succinct context and nothing else.
-        
-                                Context:
-                            """
+                    else:
+                        parser = LlamaParse(
+                            result_type=ResultType.TXT,
+                            api_key=st.secrets[llama_cloud_api_key],
+                            verbose=False,
                         )
 
-                        messages = prompt.format_messages(
-                            document=document, chunk=chunk
+                        document = " ".join(
+                            [
+                                doc.text
+                                for doc in parser.load_data(
+                                    st.session_state[document_file_path_key]
+                                )
+                            ]
                         )
 
-                        llm = ChatOpenAI(
-                            model_name="gpt-4o",
-                            openai_api_key=SecretStr(st.secrets[openai_api_key]),
-                        )
+                        def generate_context(chunk: str) -> str:
+                            prompt = ChatPromptTemplate.from_template(
+                                """
+                                    You are an AI assistant specializing in document analysis. Your task is to provide brief, relevant context for a chunk of text from the given document.
+                                    Here is the document:
+                                    <document>
+                                    {document}
+                                    </document>
+            
+                                    Here is the chunk we want to situate within the whole document:
+                                    <chunk>
+                                    {chunk}
+                                    </chunk>
+            
+                                    Provide a concise context (2-3 sentences) for this chunk, considering the following guidelines:
+                                    1. Identify the main topic or concept discussed in the chunk.
+                                    2. Mention any relevant information or comparisons from the broader document context.
+                                    3. If applicable, note how this information relates to the overall theme or purpose of the document.
+                                    4. Include any key figures, dates, or percentages that provide important context.
+                                    5. Do not use phrases like "This chunk discusses" or "This section provides". Instead, directly state the context.
+            
+                                    Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Answer only with the succinct context and nothing else.
+            
+                                    Context:
+                                """
+                            )
 
-                        response = llm.invoke(messages)
-                        return response.content
+                            messages = prompt.format_messages(
+                                document=document, chunk=chunk
+                            )
 
-                    for chunk in st.session_state[chunks_key]:
-                        context = generate_context(
-                            document=st.session_state[loaded_document_content_key],
-                            chunk=chunk["chunk"].page_content,
-                        )
+                            llm = ChatOpenAI(
+                                model_name="gpt-4o",
+                                openai_api_key=SecretStr(st.secrets[openai_api_key]),
+                            )
 
-                        contextualized_content = (
-                            f"{context}\n\n{chunk["chunk"].page_content}"
-                        )
+                            response = llm.invoke(messages)
+                            return response.content
 
-                        chunk["chunk_context"] = context
-                        chunk["contextualized_content"] = contextualized_content
+                        for chunk in st.session_state[chunks_key]:
+                            context = generate_context(
+                                chunk=chunk["chunk"].page_content,
+                            )
 
-                        st.session_state[chunks_with_context_key].append(chunk)
+                            contextualized_content = (
+                                f"{context}\n\n{chunk["chunk"].page_content}"
+                            )
+
+                            chunk["chunk_context"] = context
+                            chunk["contextualized_content"] = contextualized_content
+
+                            st.session_state[chunks_with_context_key].append(chunk)
 
             if st.session_state[chunks_with_context_key]:
                 _, col2, _ = st.columns([1, 5, 1])
