@@ -9,7 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from llama_parse import LlamaParse, ResultType
-from pydantic import SecretStr
+from pydantic import SecretStr, BaseModel
 from rank_bm25 import BM25Okapi
 
 from common.theme import *
@@ -52,15 +52,15 @@ if user_query_key not in st.session_state:
 
 chunks_with_bm25_scores_key = "cr_chunks_with_bm25_scores"
 if chunks_with_bm25_scores_key not in st.session_state:
-    st.session_state[chunks_with_bm25_scores_key] = None
+    st.session_state[chunks_with_bm25_scores_key] = []
 
 chunks_with_vector_scores_key = "cr_chunks_with_vector_scores"
 if chunks_with_vector_scores_key not in st.session_state:
-    st.session_state[chunks_with_vector_scores_key] = None
+    st.session_state[chunks_with_vector_scores_key] = []
 
 chunks_with_rrf_scores_key = "cr_chunks_with_rrf_scores"
 if chunks_with_rrf_scores_key not in st.session_state:
-    st.session_state[chunks_with_rrf_scores_key] = None
+    st.session_state[chunks_with_rrf_scores_key] = []
 
 openai_api_key = "OPENAI_API_KEY"
 if openai_api_key not in st.session_state:
@@ -69,6 +69,21 @@ if openai_api_key not in st.session_state:
 llama_cloud_api_key = "LLAMA_CLOUD_API_KEY"
 if llama_cloud_api_key not in st.session_state:
     st.session_state[llama_cloud_api_key] = ""
+
+
+class Chunk(BaseModel):
+    id: int
+    content: str
+    metadata: dict
+    context: str = None
+    contextualized_content: str = None
+    bm25_score: float = None
+    bm25_rank: int = None
+    vector_score: float = None
+    vector_rank: int = None
+    rrf_score: float = None
+    rrf_rank: int = None
+
 
 st.set_page_config(
     page_title="Contextual Retrieval RAG",
@@ -169,9 +184,13 @@ elif st.session_state[navigation_page_key] == 2:
                     )
 
                     st.session_state[chunks_key] = []
-                    for chunk_id, chunk_obj in enumerate(chunks):
+                    for chunk_id, chunk_document in enumerate(chunks):
                         st.session_state[chunks_key].append(
-                            {"chunk_id": chunk_id + 1, "chunk": chunk_obj}
+                            Chunk(
+                                id=chunk_id + 1,
+                                content=chunk_document.page_content,
+                                metadata=chunk_document.metadata,
+                            )
                         )
 
             if st.session_state[chunks_key]:
@@ -180,9 +199,9 @@ elif st.session_state[navigation_page_key] == 2:
                     with st.container():
                         st.html("<br/>")
                         container_title("Chunks")
-                        for chunk_info in st.session_state[chunks_key]:
-                            with st.expander(f"CHUNK: {chunk_info["chunk_id"]}"):
-                                st.text(chunk_info["chunk"].page_content)
+                        for chunk in st.session_state[chunks_key]:
+                            with st.expander(f"CHUNK: {chunk.id}"):
+                                st.text(chunk.content)
 
 # PAGE-3: Add context to the chunks
 
@@ -229,8 +248,8 @@ elif st.session_state[navigation_page_key] == 3:
                             ]
                         )
 
-                        def generate_context(chunk: str) -> str:
-                            prompt = ChatPromptTemplate.from_template(
+                        def generate_context(chunk_content) -> str:
+                            generate_context_prompt = ChatPromptTemplate.from_template(
                                 """
                                     You are an AI assistant specializing in document analysis. Your task is to provide brief, relevant context for a chunk of text from the given document.
                                     Here is the document:
@@ -256,29 +275,30 @@ elif st.session_state[navigation_page_key] == 3:
                                 """
                             )
 
-                            messages = prompt.format_messages(
-                                document=document, chunk=chunk
+                            messages = generate_context_prompt.format_messages(
+                                document=document, chunk=chunk_content
                             )
 
-                            llm = ChatOpenAI(
+                            generate_context_llm = ChatOpenAI(
                                 model_name="gpt-4o",
-                                openai_api_key=SecretStr(st.secrets[openai_api_key]),
+                                openai_api_key=SecretStr(
+                                    st.session_state[openai_api_key]
+                                ),
                             )
 
-                            response = llm.invoke(messages)
-                            return response.content
+                            generate_context_llm_response = generate_context_llm.invoke(
+                                messages
+                            )
+                            return generate_context_llm_response.content
 
                         for chunk in st.session_state[chunks_key]:
-                            context = generate_context(
-                                chunk=chunk["chunk"].page_content,
+                            chunk.context = generate_context(
+                                chunk_content=chunk.content,
                             )
 
-                            contextualized_content = (
-                                f"{context}\n\n{chunk["chunk"].page_content}"
+                            chunk.contextualized_content = (
+                                f"{chunk.context}\n\n{chunk.content}"
                             )
-
-                            chunk["chunk_context"] = context
-                            chunk["contextualized_content"] = contextualized_content
 
                             st.session_state[chunks_with_context_key].append(chunk)
 
@@ -288,18 +308,18 @@ elif st.session_state[navigation_page_key] == 3:
                     with st.container():
                         st.html("<br/>")
                         container_title("Chunks")
-                        for chunk_info in st.session_state[chunks_with_context_key]:
-                            with st.expander(f"CHUNK: {chunk_info["chunk_id"]}"):
-                                chunk_content, chunk_context = st.tabs(
+                        for chunk in st.session_state[chunks_with_context_key]:
+                            with st.expander(f"CHUNK: {chunk.id}"):
+                                chunk_content_tab, chunk_context_tab = st.tabs(
                                     ["Chunk Content", "Chunk Context"]
                                 )
-                                chunk_content.text(chunk_info["chunk"].page_content)
-                                chunk_context.text(chunk_info["chunk_context"])
+                                chunk_content_tab.text(chunk.content)
+                                chunk_context_tab.text(chunk.context)
 
 # PAGE-4: Similarity Search
 
 elif st.session_state[navigation_page_key] == 4:
-    if st.session_state[chunks_key]:
+    if st.session_state[chunks_with_context_key]:
         with container("similarity_search_container"):
             container_title("Similarity Search Scores")
 
@@ -329,14 +349,14 @@ elif st.session_state[navigation_page_key] == 4:
                     if not st.session_state[user_query_key]:
                         st.error("Please enter user query.", icon="🚨")
                     else:
-                        chunks = st.session_state[chunks_key]
+                        chunks = st.session_state[chunks_with_context_key]
 
                         # BM25
 
                         tokenized_query = st.session_state[user_query_key].split()
 
                         chunks_content = [
-                            item["contextualized_content"] for item in chunks
+                            chunk.contextualized_content for chunk in chunks
                         ]
 
                         tokenized_chunks_content = [
@@ -349,20 +369,22 @@ elif st.session_state[navigation_page_key] == 4:
 
                         bm25_ranks = len(bm25_scores) - bm25_scores.argsort().argsort()
 
-                        chunks_with_bm25_scores = list(
-                            zip(chunks, bm25_scores, bm25_ranks)
-                        )
+                        for chunk, bm25_score, bm25_rank in zip(
+                            chunks, bm25_scores, bm25_ranks
+                        ):
+                            chunk.bm25_score = bm25_score
+                            chunk.bm25_rank = bm25_rank
 
-                        st.session_state[chunks_with_bm25_scores_key] = (
-                            chunks_with_bm25_scores
-                        )
+                            st.session_state[chunks_with_bm25_scores_key].append(chunk)
 
                         # Vector Search
 
                         vector_store = FAISS.from_texts(
-                            texts=[item["contextualized_content"] for item in chunks],
+                            texts=[chunk.contextualized_content for chunk in chunks],
                             embedding=OpenAIEmbeddings(
-                                openai_api_key=SecretStr(st.secrets["OPENAI_API_KEY"])
+                                openai_api_key=SecretStr(
+                                    st.session_state["OPENAI_API_KEY"]
+                                )
                             ),
                         )
 
@@ -380,24 +402,22 @@ elif st.session_state[navigation_page_key] == 4:
 
                         vector_scores = zip(vector_scores, vector_ranks)
 
-                        chunks_with_vector_scores = []
                         for chunk_with_vector_score in vector_scores:
                             for chunk in chunks:
                                 if (
-                                    chunk["contextualized_content"]
+                                    chunk.contextualized_content
                                     == chunk_with_vector_score[0][0].page_content
                                 ):
-                                    chunks_with_vector_scores.append(
-                                        (
-                                            chunk,
-                                            chunk_with_vector_score[0][1],
-                                            chunk_with_vector_score[1],
-                                        )
-                                    )
+                                    chunk.vector_score = chunk_with_vector_score[0][1]
+                                    chunk.vector_rank = chunk_with_vector_score[1]
+
+                                    st.session_state[
+                                        chunks_with_vector_scores_key
+                                    ].append(chunk)
 
                         st.session_state[chunks_with_vector_scores_key] = sorted(
-                            chunks_with_vector_scores,
-                            key=lambda x: x[0]["chunk_id"],
+                            st.session_state[chunks_with_vector_scores_key],
+                            key=lambda x: x.id,
                         )
 
             if (
@@ -424,21 +444,15 @@ elif st.session_state[navigation_page_key] == 4:
 
                             st.html("<br/>")
 
-                            for chunk_with_bm25_score in st.session_state[
-                                chunks_with_bm25_scores_key
-                            ]:
+                            for chunk in st.session_state[chunks_with_bm25_scores_key]:
                                 with st.expander(
-                                    f"CHUNK: {chunk_with_bm25_score[0]["chunk_id"]}, SCORE: {chunk_with_bm25_score[1]}, RANK: {chunk_with_bm25_score[2]}"
+                                    f"CHUNK: {chunk.id}, SCORE: {chunk.bm25_score}, RANK: {chunk.bm25_rank}"
                                 ):
-                                    chunk_content, chunk_context = st.tabs(
+                                    chunk_content_tab, chunk_context_tab = st.tabs(
                                         ["Chunk Content", "Chunk Context"]
                                     )
-                                    chunk_content.text(
-                                        chunk_with_bm25_score[0]["chunk"].page_content
-                                    )
-                                    chunk_context.text(
-                                        chunk_with_bm25_score[0]["chunk_context"]
-                                    )
+                                    chunk_content_tab.text(chunk.content)
+                                    chunk_context_tab.text(chunk.context)
 
                     with vector_search:
                         with st.container(border=True):
@@ -456,21 +470,17 @@ elif st.session_state[navigation_page_key] == 4:
 
                             st.html("<br/>")
 
-                            for chunk_with_vector_score in st.session_state[
+                            for chunk in st.session_state[
                                 chunks_with_vector_scores_key
                             ]:
                                 with st.expander(
-                                    f"CHUNK: {chunk_with_vector_score[0]["chunk_id"]}, SCORE: {chunk_with_vector_score[1]}, RANK: {chunk_with_vector_score[2]}"
+                                    f"CHUNK: {chunk.id}, SCORE: {chunk.vector_score}, RANK: {chunk.vector_rank}"
                                 ):
-                                    chunk_content, chunk_context = st.tabs(
+                                    chunk_content_tab, chunk_context_tab = st.tabs(
                                         ["Chunk Content", "Chunk Context"]
                                     )
-                                    chunk_content.text(
-                                        chunk_with_vector_score[0]["chunk"].page_content
-                                    )
-                                    chunk_context.text(
-                                        chunk_with_vector_score[0]["chunk_context"]
-                                    )
+                                    chunk_content_tab.text(chunk.content)
+                                    chunk_context_tab.text(chunk.context)
 
 # PAGE-5: Re-Ranking
 
@@ -501,51 +511,53 @@ elif st.session_state[navigation_page_key] == 5:
                     k = 60
                     return 1 / (k + keyword_rank) + 1 / (k + semantic_rank)
 
-                rrf_scores = [
-                    (chunk, rrf_score(bm25_rank, vector_rank))
-                    for (chunk, _, bm25_rank), (_, _, vector_rank) in zip(
+                chunk_with_rrf_scores = [
+                    Chunk(
+                        id=chunk_with_bm25_rank.id,
+                        content=chunk_with_bm25_rank.content,
+                        metadata=chunk_with_bm25_rank.metadata,
+                        context=chunk_with_bm25_rank.context,
+                        contextualized_content=chunk_with_bm25_rank.contextualized_content,
+                        bm25_score=chunk_with_bm25_rank.bm25_score,
+                        bm25_rank=chunk_with_bm25_rank.bm25_rank,
+                        vector_score=chunk_with_vector_rank.vector_score,
+                        vector_rank=chunk_with_vector_rank.vector_rank,
+                        rrf_score=rrf_score(
+                            chunk_with_bm25_rank.bm25_score,
+                            chunk_with_vector_rank.vector_score,
+                        ),
+                    )
+                    for chunk_with_bm25_rank, chunk_with_vector_rank in zip(
                         st.session_state[chunks_with_bm25_scores_key],
                         st.session_state[chunks_with_vector_scores_key],
                     )
                 ]
 
                 rrf_ranks = (
-                    len(rrf_scores)
-                    - np.array(list(map(lambda tup: tup[1], rrf_scores)))
+                    len(chunk_with_rrf_scores)
+                    - np.array(list(map(lambda x: x.rrf_score, chunk_with_rrf_scores)))
                     .argsort()
                     .argsort()
                 )
 
-                chunks_with_rrf_scores = zip(rrf_scores, rrf_ranks)
+                for chunk, rrf_rank in zip(chunk_with_rrf_scores, rrf_ranks):
+                    chunk.rrf_rank = rrf_rank
+                    st.session_state[chunks_with_rrf_scores_key].append(chunk)
 
                 st.session_state[chunks_with_rrf_scores_key] = sorted(
-                    [
-                        (
-                            chunk,
-                            rrf_score,
-                            rrf_rank,
-                        )
-                        for (
-                            chunk,
-                            rrf_score,
-                        ), rrf_rank in chunks_with_rrf_scores
-                    ],
-                    key=lambda x: x[0]["chunk_id"],
+                    st.session_state[chunks_with_rrf_scores_key],
+                    key=lambda x: x.id,
                 )
 
-                for chunk_with_rrf_score in st.session_state[
-                    chunks_with_rrf_scores_key
-                ]:
+                for chunk in st.session_state[chunks_with_rrf_scores_key]:
                     with st.expander(
-                        f"CHUNK: {chunk_with_rrf_score[0]["chunk_id"]}, SCORE: {chunk_with_rrf_score[1]}, RANK: {chunk_with_rrf_score[2]}"
+                        f"CHUNK: {chunk.id}, SCORE: {chunk.rrf_score}, RANK: {chunk.rrf_rank}"
                     ):
-                        chunk_content, chunk_context = st.tabs(
+                        chunk_content_tab, chunk_context_tab = st.tabs(
                             ["Chunk Content", "Chunk Context"]
                         )
-                        chunk_content.text(
-                            chunk_with_rrf_score[0]["chunk"].page_content
-                        )
-                        chunk_context.text(chunk_with_rrf_score[0]["chunk_context"])
+                        chunk_content_tab.text(chunk.content)
+                        chunk_context_tab.text(chunk.context)
 
 # PAGE-6: Generate Response
 
@@ -580,18 +592,18 @@ elif st.session_state[navigation_page_key] == 6:
 
                         top_4_chunks = sorted(
                             st.session_state[chunks_with_rrf_scores_key],
-                            key=lambda x: x[2],
+                            key=lambda x: x.rrf_rank,
                         )[0:4]
 
-                        for chunk, rrf_score, rrf_rank in top_4_chunks:
+                        for chunk in top_4_chunks:
                             with st.expander(
-                                f"CHUNK: {chunk["chunk_id"]}, SCORE: {rrf_score}, RANK: {rrf_rank}"
+                                f"CHUNK: {chunk.id}, SCORE: {chunk.rrf_score}, RANK: {chunk.rrf_rank}"
                             ):
-                                chunk_content, chunk_context = st.tabs(
+                                chunk_content_tab, chunk_context_tab = st.tabs(
                                     ["Chunk Content", "Chunk Context"]
                                 )
-                                chunk_content.text(chunk["chunk"].page_content)
-                                chunk_context.text(chunk["chunk_context"])
+                                chunk_content_tab.text(chunk.content)
+                                chunk_context_tab.text(chunk.context)
 
         with col2:
             with container("llm_output_container"):
@@ -626,8 +638,7 @@ elif st.session_state[navigation_page_key] == 6:
                         rag_chain = prompt | llm
 
                         llm_context = "\n\n".join(
-                            chunk["contextualized_content"]
-                            for chunk, _, _ in top_4_chunks
+                            chunk.contextualized_content for chunk in top_4_chunks
                         )
 
                         response = rag_chain.invoke(
