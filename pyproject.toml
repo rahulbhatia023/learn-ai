@@ -22,6 +22,8 @@ langchain-neo4j = "^0.1.1"
 rank-bm25 = "^0.2.2"
 streamlit-extras = "^0.5.0"
 llama-parse = "^0.5.17"
+tavily-python = "^0.5.0"
+yfinance = "^0.2.51"
 
 
 [build-system]

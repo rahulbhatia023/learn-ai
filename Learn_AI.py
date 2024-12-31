@@ -61,6 +61,18 @@ def add_banner(banner_title, banner_image_name, banner_content, launch_button_ur
 
 
 add_banner(
+    banner_title="Financial Analyst Agent",
+    banner_image_name="financial-analysis-agent-banner.jpg",
+    banner_content="""
+        Integrates a stock market API for real-time stock data and financial insights.
+        Incorporates the Tavily search API for broader web searches.
+        Provides a comprehensive tool for financial data and information retrieval.
+        Users should conduct their own research or consult a financial advisor before making decisions.
+    """,
+    launch_button_url="Financial_Analyst_Agent",
+)
+
+add_banner(
     banner_title="Contextual Retrieval RAG",
     banner_image_name="contextual-retrieval-rag-banner.png",
     banner_content="""
