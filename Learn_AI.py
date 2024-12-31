@@ -64,10 +64,9 @@ add_banner(
     banner_title="Financial Analyst Agent",
     banner_image_name="financial-analysis-agent-banner.jpg",
     banner_content="""
-        Integrates a stock market API for real-time stock data and financial insights.
-        Incorporates the Tavily search API for broader web searches.
-        Provides a comprehensive tool for financial data and information retrieval.
-        Users should conduct their own research or consult a financial advisor before making decisions.
+        The AI powered financial analyst agent designed to provide insightful and concise analysis to help you make informed financial decisions. 
+        Main functions include retrieving and analyzing financial data such as stock prices, historical data, and market trends. 
+        It aims to empower you with clear, actionable insights to navigate the financial landscape effectively. 
     """,
     launch_button_url="Financial_Analyst_Agent",
 )

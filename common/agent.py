@@ -40,9 +40,8 @@ class BaseAgent:
         if tools:
             llm = llm.bind_tools(tools=tools)
 
-        def call_llm(state):
-            messages = state["messages"]
-            response = llm.invoke(messages)
+        def call_llm(state: MessagesState):
+            response = llm.invoke(state["messages"])
             return {"messages": [response]}
 
         graph = StateGraph(MessagesState)

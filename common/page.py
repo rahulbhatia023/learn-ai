@@ -131,7 +131,14 @@ class BasePage:
             get_api_key(cls.required_keys)
 
         if cls.required_keys and not keys_missing(cls.required_keys):
-            agent_graph = cls.agent.get_graph()
+            if "agent_graph" not in st.session_state:
+                st.session_state.agent_graph = {}
+            if cls.agent.name not in st.session_state.agent_graph:
+                st.session_state.agent_graph[cls.agent.name] = None
+            if not st.session_state.agent_graph[cls.agent.name]:
+                st.session_state.agent_graph[cls.agent.name] = cls.agent.get_graph()
+
+            agent_graph = st.session_state.agent_graph[cls.agent.name]
 
             with st.sidebar:
                 st.divider()
