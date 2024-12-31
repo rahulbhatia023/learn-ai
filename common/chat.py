@@ -23,5 +23,5 @@ def add_chat_message(agent_name: str, role: str, content: str):
 def display_message(agent_name: str, v):
     if "messages" in v:
         m = v["messages"][-1]
-        if (m.type == "ai" and not m.tool_calls) or m.type == "human":
+        if m.type == "ai" and not m.tool_calls:
             add_chat_message(agent_name=agent_name, role=m.type, content=m.content)

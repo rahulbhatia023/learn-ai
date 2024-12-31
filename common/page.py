@@ -83,17 +83,23 @@ class BasePage:
                 agent_name=cls.agent.name, role="human", content=human_message
             )
 
-            for event in agent_graph.stream(
-                input=agent_input,
-                config=config,
-                stream_mode="updates",
-            ):
-                for k, v in event.items():
-                    if cls.agent.nodes_to_display:
-                        if k in cls.agent.nodes_to_display:
-                            display_message(agent_name=cls.agent.name, v=v)
-                    else:
-                        display_message(agent_name=cls.agent.name, v=v)
+            with st.spinner(text="Thinking..."):
+                ai_messages = []
+                for event in agent_graph.stream(
+                    input=agent_input,
+                    config=config,
+                    stream_mode="updates",
+                ):
+                    for k, v in event.items():
+                        if cls.agent.nodes_to_display:
+                            if k in cls.agent.nodes_to_display:
+                                ai_messages.append(v)
+
+                        else:
+                            ai_messages.append(v)
+
+            for message in ai_messages:
+                display_message(agent_name=cls.agent.name, v=message)
 
     @classmethod
     def pre_render(cls):
@@ -117,6 +123,10 @@ class BasePage:
 
                 .fontStyle {
                     font-family: 'Poppins';
+                }
+                
+                [title="Show password text"] {
+                    display: none;
                 }
             </style>
             """,
