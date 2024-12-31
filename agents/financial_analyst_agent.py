@@ -16,6 +16,8 @@ class FinancialAnalystAgent(BaseAgent):
         2. Use the available tools to retrieve the necessary data, such as stock financials, news, or aggregate data. 
 
         Your ultimate goal is to empower users with clear, actionable insights to navigate the financial landscape effectively.
+        
+        Please avoid using $ symbol in your response, rather use currency code like USD, EUR, etc.
     """
 
     @classmethod
