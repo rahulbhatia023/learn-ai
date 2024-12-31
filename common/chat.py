@@ -6,7 +6,7 @@ def add_chat_message(agent_name: str, role: str, content: str):
         {"role": role, "content": content}
     )
     with st.chat_message(role):
-        st.markdown(f"<p class='fontStyle'>{content}</p>", unsafe_allow_html=True)
+        st.write(content)
 
 
 def display_message(agent_name: str, v):

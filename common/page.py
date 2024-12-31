@@ -204,7 +204,7 @@ class BasePage:
 
             for message in st.session_state.page_messages[cls.agent.name]:
                 with st.chat_message(message["role"]):
-                    st.html(f"<p class='fontStyle'>{message["content"]}</p>")
+                    st.write(message["content"])
 
             if human_message := st.chat_input():
                 if (
