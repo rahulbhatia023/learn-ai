@@ -68,7 +68,7 @@ add_banner(
         Main functions include retrieving and analyzing financial data such as stock prices, historical data, and market trends.
         It uses Yahoo Finance API tools to fetch the data and OpenAI API to generate the insights. 
         It aims to empower you with clear, actionable insights to navigate the financial landscape effectively.
-        Users should conduct their own research or consult a financial advisor before making decisions 
+        Users should conduct their own research or consult a financial advisor before making decisions.
     """,
     launch_button_url="Financial_Analyst_Agent",
 )
