@@ -13,11 +13,12 @@ class FinancialAnalystAgent(BaseAgent):
 
         Follow these steps:
         1. Identify the relevant financial data needed to answer the query.
-        2. Use the available tools to retrieve the necessary data, such as stock financials, news, or aggregate data. 
+        2. Use the available tools to retrieve the necessary data, such as stock financials, news, or aggregate data.
+        3. Analyze the data to provide a clear and actionable insight.
 
-        Your ultimate goal is to empower users with clear, actionable insights to navigate the financial landscape effectively.
-        
         Please avoid using $ symbol in your response, rather use currency code like USD, EUR, etc.
+
+        Avoid ending the response with phrases that suggest follow-up actions or encourage further questions, such as ‘If you need more details or further analysis, feel free to ask.’ 
     """
 
     @classmethod
