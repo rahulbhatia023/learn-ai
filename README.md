@@ -51,17 +51,7 @@ This approach bridges the gap between granular document splitting and the need f
 The AI powered financial analyst agent designed to provide insightful and concise analysis to help you make informed financial decisions. 
 Main functions include retrieving and analyzing financial data such as stock prices, historical data, and market trends.
 It uses Yahoo Finance API tools to fetch the data and OpenAI API to generate the insights.
-It aims to empower you with clear, actionable insights to navigate the financial landscape effectively. 
-
-<br>
-
----
-
-# Tech Stack
-
-* [LangGraph](https://www.langchain.com/langgraph) - To define the agentic flow of the application
-* [OpenAI API](https://openai.com/api/) - To interact with the OpenAI provided LLM models
-* [Streamlit](https://streamlit.io/) - For the chat UI interface powered by python
+It aims to empower you with clear, actionable insights to navigate the financial landscape effectively.
 
 <br>
 
