@@ -61,6 +61,17 @@ def add_banner(banner_title, banner_image_name, banner_content, launch_button_ur
 
 
 add_banner(
+    banner_title="Financial Analyst Agent",
+    banner_image_name="financial-analysis-agent-banner.jpg",
+    banner_content="""
+        The AI powered financial analyst agent designed to provide insightful and concise analysis to help you make informed financial decisions. 
+        Main functions include retrieving and analyzing financial data such as stock prices, historical data, and market trends. 
+        It aims to empower you with clear, actionable insights to navigate the financial landscape effectively. 
+    """,
+    launch_button_url="Financial_Analyst_Agent",
+)
+
+add_banner(
     banner_title="Contextual Retrieval RAG",
     banner_image_name="contextual-retrieval-rag-banner.png",
     banner_content="""
