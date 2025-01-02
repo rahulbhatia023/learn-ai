@@ -42,6 +42,17 @@ This enables both precise keyword matching and deeper understanding of query int
 It is ideal for tasks like multi-faceted search, document retrieval, or AI-driven assistance. 
 Hybrid Search RAG bridges the gap between traditional search techniques and modern semantic capabilities.
 
+### [5. Contextual Retrieval RAG](https://learn-ai.streamlit.app/Contextual_Retrieval_RAG)
+Contextual retrieval enhances traditional RAG by addressing the issue of insufficient context in individual document chunks.
+Instead of treating chunks as isolated units, it prepends chunk-specific explanatory context to enrich their meaning.
+This approach bridges the gap between granular document splitting and the need for meaningful context in retrieval.
+
+### [6. Financial Analyst Agent](https://learn-ai.streamlit.app/Financial_Analyst_Agent)
+The AI powered financial analyst agent designed to provide insightful and concise analysis to help you make informed financial decisions. 
+Main functions include retrieving and analyzing financial data such as stock prices, historical data, and market trends.
+It uses Yahoo Finance API tools to fetch the data and OpenAI API to generate the insights.
+It aims to empower you with clear, actionable insights to navigate the financial landscape effectively. 
+
 <br>
 
 ---
