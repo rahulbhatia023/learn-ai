@@ -31,6 +31,35 @@ app_container_style = """
 """
 
 
+def set_page_config(
+    page_title: str,
+):
+    st.set_page_config(
+        page_title=page_title,
+        page_icon="🤖",
+        layout="wide",
+    )
+
+    st.html(
+        """
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Poppins');
+
+            .stApp {
+                font-family: 'Poppins';
+                background-color: #16423C;
+            }
+
+            [title="Show password text"] {
+                display: none;
+            }
+        </style>
+        """
+    )
+
+    st.html(f"<h1 style={app_title_style}>{page_title}</h1><br/>")
+
+
 def container(key):
     return stylable_container(
         key=key,
