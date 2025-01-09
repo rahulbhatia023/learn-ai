@@ -27,3 +27,12 @@ def add_file_uploader(
                 file.write(uploaded_file.read())
                 file.flush()
                 st.session_state["uploaded_file"][key] = file.name
+
+
+def is_file_uploaded(key: str) -> bool:
+    uploaded = False
+    if st.session_state["uploaded_file"][key] is not None:
+        uploaded = True
+    else:
+        st.error("Please upload a file.")
+    return uploaded

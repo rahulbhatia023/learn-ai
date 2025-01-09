@@ -1,9 +1,7 @@
-import tempfile
-
 import streamlit as st
 
 from agents.data_query_agent import DataQueryAgent
-from common.file_uploader import add_file_uploader
+from common.file_uploader import add_file_uploader, is_file_uploaded
 from common.langgraph import add_langgraph_workflow_visualization
 from common.page import get_api_key, keys_missing
 from common.theme import set_page_config
@@ -35,4 +33,5 @@ with st.sidebar:
 
 if not keys_missing(agent.required_api_keys):
     if query := st.chat_input(placeholder="Write your query here..."):
-        st.write(query)
+        if is_file_uploaded(key=agent.agent_name):
+            st.write(query)
