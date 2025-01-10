@@ -1,7 +1,7 @@
 import operator
 from typing import Dict, Any, List, Annotated
 
-import streamlit
+import streamlit as st
 from langchain_core.messages import AIMessage
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -13,15 +13,8 @@ from langgraph.graph import MessagesState, StateGraph
 from common.sqlite import get_schema, execute_query
 
 
-class InputState(MessagesState):
+class DataQueryState(MessagesState):
     question: str
-    parsed_question: Dict[str, Any]
-    unique_nouns: List[str]
-    sql_query: str
-    results: List[Any]
-
-
-class OutputState(MessagesState):
     parsed_question: Dict[str, Any]
     unique_nouns: List[str]
     sql_query: str
@@ -45,7 +38,7 @@ class DataQueryAgent:
     def get_graph(cls):
         llm = ChatOpenAI(
             model_name="gpt-4o",
-            openai_api_key=streamlit.session_state["OPENAI_API_KEY"],
+            openai_api_key=st.session_state["OPENAI_API_KEY"],
             temperature=0,
         )
 
@@ -54,7 +47,7 @@ class DataQueryAgent:
             question = state["question"]
 
             schema = get_schema(
-                sqlite_file=streamlit.session_state["uploaded_file"][cls.agent_name]
+                sqlite_file=st.session_state["uploaded_file"][cls.agent_name]
             )
 
             prompt = ChatPromptTemplate.from_messages(
@@ -84,7 +77,14 @@ class DataQueryAgent:
                     ),
                     (
                         "human",
-                        "===Database schema:\n{schema}\n\n===User question:\n{question}\n\nIdentify relevant tables and columns:",
+                        """
+                        Database schema:
+                        {schema}
+                        
+                        User question:
+                        {question}
+                        
+                        Identify relevant tables and columns""",
                     ),
                 ]
             )
@@ -115,9 +115,7 @@ class DataQueryAgent:
                     column_names = ", ".join(f"`{col}`" for col in noun_columns)
                     query = f"SELECT DISTINCT {column_names} FROM `{table_name}`"
                     results = execute_query(
-                        sqlite_file=streamlit.session_state["uploaded_file"][
-                            cls.agent_name
-                        ],
+                        sqlite_file=st.session_state["uploaded_file"][cls.agent_name],
                         query=query,
                     )
                     for row in results:
@@ -135,7 +133,7 @@ class DataQueryAgent:
                 return {"sql_query": "NOT_RELEVANT", "is_relevant": False}
 
             schema = get_schema(
-                sqlite_file=streamlit.session_state["uploaded_file"][cls.agent_name]
+                sqlite_file=st.session_state["uploaded_file"][cls.agent_name]
             )
 
             prompt = ChatPromptTemplate.from_messages(
@@ -212,7 +210,7 @@ class DataQueryAgent:
                 return {"sql_query": "NOT_RELEVANT", "sql_valid": False}
 
             schema = get_schema(
-                sqlite_file=streamlit.session_state["uploaded_file"][cls.agent_name]
+                sqlite_file=st.session_state["uploaded_file"][cls.agent_name]
             )
 
             prompt = ChatPromptTemplate.from_messages(
@@ -299,9 +297,7 @@ class DataQueryAgent:
 
             try:
                 results = execute_query(
-                    sqlite_file=streamlit.session_state["uploaded_file"][
-                        cls.agent_name
-                    ],
+                    sqlite_file=st.session_state["uploaded_file"][cls.agent_name],
                     query=query,
                 )
                 return {"results": results}
@@ -336,7 +332,7 @@ class DataQueryAgent:
 
             final_response_prompt = """
                     If the response is not relevant then:
-                        Here is the message that user sent: {human_message}
+                        Here is the message that user sent: {query}
                         If the message is simply a greeting message then reply back with a greet else Simply say one liner: Sorry, I can only give answers relevant to the database. And then just exit.
                     Else:
                         Below are the given sql query, query results and final response
@@ -349,7 +345,6 @@ class DataQueryAgent:
 
             final_response = llm.invoke(
                 final_response_prompt.format(
-                    human_message=state["messages"][-1],
                     query=state["sql_query"],
                     results=state["results"],
                     response=response,
@@ -358,7 +353,7 @@ class DataQueryAgent:
 
             return {"messages": [AIMessage(content=final_response)]}
 
-        graph = StateGraph(input=InputState, output=OutputState)
+        graph = StateGraph(state_schema=DataQueryState)
 
         graph.add_node("parse_question", parse_question)
         graph.add_node("get_unique_nouns", get_unique_nouns)
