@@ -64,7 +64,7 @@ if not keys_missing(agent.required_api_keys):
 
             if result:
                 with st.chat_message("ai"):
-                    if result["results"] is "NOT_RELEVANT":
+                    if result["results"] == "NOT_RELEVANT":
                         st.write_stream(
                             stream_data(
                                 content="I'm sorry, I couldn't find any relevant data."
@@ -73,7 +73,7 @@ if not keys_missing(agent.required_api_keys):
                     else:
                         st.write_stream(stream_data(content=result["answer"]))
 
-                        st.header("SQL Query:")
+                        st.subheader("SQL Query:")
                         st.code(
                             body=result["sql_query"], language="sql", wrap_lines=True
                         )
@@ -82,13 +82,13 @@ if not keys_missing(agent.required_api_keys):
                             data=result["results"], columns=result["query_columns"]
                         )
 
-                        st.header("Data:")
+                        st.subheader("Data:")
                         st.dataframe(
                             data=dataframe,
                             hide_index=True,
                         )
 
-                        st.header("Data Visualization:")
+                        st.subheader("Data Visualization:")
                         st.bar_chart(
                             data=dataframe,
                             x=dataframe.columns[0],

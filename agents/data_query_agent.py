@@ -147,10 +147,10 @@ class DataQueryAgent:
                         Answer: SELECT product_name, SUM(quantity) as total_quantity FROM sales GROUP BY product_name ORDER BY total_quantity DESC LIMIT 1
         
                         2. What is the total revenue for each product?
-                        Answer: SELECT \`product name\`, SUM(quantity * price) as total_revenue FROM sales GROUP BY \`product name\`  ORDER BY total_revenue DESC
+                        Answer: SELECT `product name`, SUM(quantity * price) as total_revenue FROM sales GROUP BY `product name`  ORDER BY total_revenue DESC
         
                         3. What is the market share of each product?
-                        Answer: SELECT \`product name\`, SUM(quantity) * 100.0 / (SELECT SUM(quantity) FROM sa  les) as market_share FROM sales GROUP BY \`product name\`  ORDER BY market_share DESC
+                        Answer: SELECT `product name`, SUM(quantity) * 100.0 / (SELECT SUM(quantity) FROM sa  les) as market_share FROM sales GROUP BY `product name`  ORDER BY market_share DESC
         
                         Just give the query string. Do not format it. Make sure to use the correct spellings of nouns as provided in the unique nouns list. All the table and column names should be enclosed in backticks.
                         """,
@@ -244,13 +244,13 @@ class DataQueryAgent:
                             2. {{
                                 "valid": false,
                                 "issues": "Column USERS does not exist",
-                                "corrected_query": "SELECT * FROM \`users\` WHERE age > 25"
+                                "corrected_query": "SELECT * FROM `users` WHERE age > 25"
                             }}
         
                             3. {{
                                 "valid": false,
                                 "issues": "Column names and table names should be enclosed in backticks if they contain spaces or special characters",
-                                "corrected_query": "SELECT * FROM \`gross income\` WHERE \`age\` > 25"
+                                "corrected_query": "SELECT * FROM `gross income` WHERE `age` > 25"
                             }}
                             """,
                     ),
