@@ -1,28 +1,26 @@
-import operator
-from typing import Dict, Any, List, Annotated
+from typing import Dict, Any, List, TypedDict
 
 import streamlit as st
-from langchain_core.messages import AIMessage
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.constants import START, END
-from langgraph.graph import MessagesState, StateGraph
+from langgraph.graph import StateGraph
 
 from common.sqlite import get_schema, execute_query
 
 
-class DataQueryState(MessagesState):
+class DataQueryState(TypedDict):
     question: str
     parsed_question: Dict[str, Any]
     unique_nouns: List[str]
     sql_query: str
+    query_columns: List[str]
     sql_valid: bool
     sql_issues: str
     results: List[Any]
-    answer: Annotated[str, operator.add]
-    error: str
+    answer: str
 
 
 class DataQueryAgent:
@@ -42,7 +40,7 @@ class DataQueryAgent:
             temperature=0,
         )
 
-        def parse_question(state):
+        def parse_question(state: DataQueryState):
             """Parse user question and identify relevant tables and columns."""
             question = state["question"]
 
@@ -89,17 +87,15 @@ class DataQueryAgent:
                 ]
             )
 
-            output_parser = JsonOutputParser()
-
             response = llm.invoke(
                 prompt.format_messages(schema=schema, question=question)
             ).content
 
-            parsed_response = output_parser.parse(response)
+            parsed_response = JsonOutputParser().parse(response)
 
             return {"parsed_question": parsed_response}
 
-        def get_unique_nouns(state):
+        def get_unique_nouns(state: DataQueryState):
             """Find unique nouns in relevant tables and columns."""
             parsed_question = state["parsed_question"]
 
@@ -123,7 +119,7 @@ class DataQueryAgent:
 
             return {"unique_nouns": list(unique_nouns)}
 
-        def generate_sql(state: dict) -> dict:
+        def generate_sql(state: DataQueryState) -> dict:
             """Generate SQL query based on parsed question and unique nouns."""
             question = state["question"]
             parsed_question = state["parsed_question"]
@@ -148,42 +144,47 @@ class DataQueryAgent:
                         Here are some examples:
         
                         1. What is the top selling product?
-                        Answer: SELECT product_name, SUM(quantity) as total_quantity FROM sales WHERE product_name IS NOT NULL AND quantity IS NOT NULL AND product_name != "" AND quantity != "" AND product_name != "N/A" AND quantity != "N/A" GROUP BY product_name ORDER BY total_quantity DESC LIMIT 1
+                        Answer: SELECT product_name, SUM(quantity) as total_quantity FROM sales GROUP BY product_name ORDER BY total_quantity DESC LIMIT 1
         
                         2. What is the total revenue for each product?
-                        Answer: SELECT \`product name\`, SUM(quantity * price) as total_revenue FROM sales WHERE \`product name\` IS NOT NULL AND quantity IS NOT NULL AND price IS NOT NULL AND \`product name\` != "" AND quantity != "" AND price != "" AND \`product name\` != "N/A" AND quantity != "N/A" AND price != "N/A" GROUP BY \`product name\`  ORDER BY total_revenue DESC
+                        Answer: SELECT \`product name\`, SUM(quantity * price) as total_revenue FROM sales GROUP BY \`product name\`  ORDER BY total_revenue DESC
         
                         3. What is the market share of each product?
-                        Answer: SELECT \`product name\`, SUM(quantity) * 100.0 / (SELECT SUM(quantity) FROM sa  les) as market_share FROM sales WHERE \`product name\` IS NOT NULL AND quantity IS NOT NULL AND \`product name\` != "" AND quantity != "" AND \`product name\` != "N/A" AND quantity != "N/A" GROUP BY \`product name\`  ORDER BY market_share DESC
+                        Answer: SELECT \`product name\`, SUM(quantity) * 100.0 / (SELECT SUM(quantity) FROM sa  les) as market_share FROM sales GROUP BY \`product name\`  ORDER BY market_share DESC
         
-                        4. Plot the distribution of income over time
-                        Answer: SELECT income, COUNT(*) as count FROM users WHERE income IS NOT NULL AND income != "" AND income != "N/A" GROUP BY income
-        
-                        THE RESULTS SHOULD ONLY BE IN THE FOLLOWING FORMAT, SO MAKE SURE TO ONLY GIVE TWO OR THREE COLUMNS:
-                        [[x, y]]
-                        or 
-                        [[label, x, y]]
-        
-                        For questions like "plot a distribution of the fares for men and women", count the frequency of each fare and plot it. The x axis should be the fare and the y axis should be the count of people who paid that fare.
-                        SKIP ALL ROWS WHERE ANY COLUMN IS NULL or "N/A" or "".
                         Just give the query string. Do not format it. Make sure to use the correct spellings of nouns as provided in the unique nouns list. All the table and column names should be enclosed in backticks.
                         """,
                     ),
                     (
                         "human",
-                        """===Database schema:
-                        {schema}
-        
-                        ===User question:
-                        {question}
-        
-                        ===Relevant tables and columns:
-                        {parsed_question}
-        
-                        ===Unique nouns in relevant tables:
-                        {unique_nouns}
-        
-                        Generate SQL query string""",
+                        """
+                            Database schema:
+                            {schema}
+            
+                            User question:
+                            {question}
+            
+                            Relevant tables and columns:
+                            {parsed_question}
+            
+                            Unique nouns in relevant tables:
+                            {unique_nouns}
+            
+                            Respond in JSON format with the following structure. Only respond with the JSON:
+                            {{
+                                "sql_query": string,
+                                "query_columns": [string]
+                            }}
+                            
+                            The "query_columns" field should contain the columns used in the SQL query. 
+                            Consider alias columns as well. For example, if you use "SUM(quantity) as total_quantity", then "total_quantity" should be included in the "query_columns" list.
+                            
+                            If the response is NOT_ENOUGH_INFO, then output should be: 
+                            {{
+                                "sql_query": "NOT_RELEVANT"
+                                "query_columns": None
+                            }}
+                        """,
                     ),
                 ]
             )
@@ -197,12 +198,14 @@ class DataQueryAgent:
                 )
             ).content
 
-            if response.strip() == "NOT_ENOUGH_INFO":
-                return {"sql_query": "NOT_RELEVANT"}
-            else:
-                return {"sql_query": response}
+            result = JsonOutputParser().parse(response)
 
-        def validate_and_fix_sql(state: dict) -> dict:
+            return {
+                "sql_query": result["sql_query"],
+                "query_columns": result["query_columns"],
+            }
+
+        def validate_and_fix_sql(state: DataQueryState) -> dict:
             """Validate and fix the generated SQL query."""
             sql_query = state["sql_query"]
 
@@ -230,23 +233,7 @@ class DataQueryAgent:
                                 "issues": string or null,
                                 "corrected_query": string
                             }}
-                            """,
-                    ),
-                    (
-                        "human",
-                        """===Database schema:
-                            {schema}
-        
-                            ===Generated SQL query:
-                            {sql_query}
-        
-                            Respond in JSON format with the following structure. Only respond with the JSON:
-                            {{
-                                "valid": boolean,
-                                "issues": string or null,
-                                "corrected_query": string
-                            }}
-        
+                            
                             For example:
                             1. {{
                                 "valid": true,
@@ -265,19 +252,26 @@ class DataQueryAgent:
                                 "issues": "Column names and table names should be enclosed in backticks if they contain spaces or special characters",
                                 "corrected_query": "SELECT * FROM \`gross income\` WHERE \`age\` > 25"
                             }}
-        
                             """,
+                    ),
+                    (
+                        "human",
+                        """
+                            Database schema:
+                            {schema}
+        
+                            Generated SQL query:
+                            {sql_query}
+                        """,
                     ),
                 ]
             )
-
-            output_parser = JsonOutputParser()
 
             response = llm.invoke(
                 prompt.format_messages(schema=schema, sql_query=sql_query)
             ).content
 
-            result = output_parser.parse(response)
+            result = JsonOutputParser().parse(response)
 
             if result["valid"] and result["issues"] is None:
                 return {"sql_query": sql_query, "sql_valid": True}
@@ -288,70 +282,45 @@ class DataQueryAgent:
                     "sql_issues": result["issues"],
                 }
 
-        def execute_sql(state: dict) -> dict:
+        def execute_sql(state: DataQueryState) -> dict:
             """Execute SQL query and return results."""
             query = state["sql_query"]
 
             if query == "NOT_RELEVANT":
                 return {"results": "NOT_RELEVANT"}
 
-            try:
-                results = execute_query(
-                    sqlite_file=st.session_state["uploaded_file"][cls.agent_name],
-                    query=query,
-                )
-                return {"results": results}
-            except Exception as e:
-                return {"error": str(e)}
-
-        def format_results(state: dict) -> dict:
-            """Format query results into a human-readable response."""
-            question = state["question"]
-            results = state["results"]
+            results = execute_query(
+                sqlite_file=st.session_state["uploaded_file"][cls.agent_name],
+                query=query,
+            )
 
             prompt = ChatPromptTemplate.from_messages(
                 [
                     (
                         "system",
-                        "You are an AI assistant that formats database query results into a human-readable response."
-                        "Give a conclusion to the user's question based on the query results."
-                        "Do not give the answer in markdown format."
-                        "Only give the answer in one line."
-                        "If the results are not relevant then say Sorry, I can only give answers relevant to the database.",
+                        """
+                            You are an AI assistant that analyse the results and returns the final answer summary for the given query.
+                            Give the final conclusion based on the results in 1-2 lines. 
+                        """,
                     ),
                     (
                         "human",
-                        "User question: {question}\n\nQuery results: {results}\n\nFormatted response:",
+                        """
+                            Query:
+                            {query}
+                            
+                            Results:
+                            {results}
+                        """,
                     ),
                 ]
             )
 
-            response = llm.invoke(
-                prompt.format_messages(question=question, results=results)
+            answer = llm.invoke(
+                prompt.format_messages(query=query, results=results)
             ).content
 
-            final_response_prompt = """
-                    If the response is not relevant then:
-                        Here is the message that user sent: {query}
-                        If the message is simply a greeting message then reply back with a greet else Simply say one liner: Sorry, I can only give answers relevant to the database. And then just exit.
-                    Else:
-                        Below are the given sql query, query results and final response
-                        Present all these in a pretty manner to the user:
-                        
-                        sql query: {query}
-                        query results: {results}
-                        final response: {response}
-                """
-
-            final_response = llm.invoke(
-                final_response_prompt.format(
-                    query=state["sql_query"],
-                    results=state["results"],
-                    response=response,
-                )
-            ).content
-
-            return {"messages": [AIMessage(content=final_response)]}
+            return {"results": results, "answer": answer}
 
         graph = StateGraph(state_schema=DataQueryState)
 
@@ -360,14 +329,12 @@ class DataQueryAgent:
         graph.add_node("generate_sql", generate_sql)
         graph.add_node("validate_and_fix_sql", validate_and_fix_sql)
         graph.add_node("execute_sql", execute_sql)
-        graph.add_node("format_results", format_results)
 
         graph.add_edge(START, "parse_question")
         graph.add_edge("parse_question", "get_unique_nouns")
         graph.add_edge("get_unique_nouns", "generate_sql")
         graph.add_edge("generate_sql", "validate_and_fix_sql")
         graph.add_edge("validate_and_fix_sql", "execute_sql")
-        graph.add_edge("execute_sql", "format_results")
-        graph.add_edge("format_results", END)
+        graph.add_edge("execute_sql", END)
 
         return graph.compile(checkpointer=MemorySaver())

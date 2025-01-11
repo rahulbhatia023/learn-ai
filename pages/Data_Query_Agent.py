@@ -1,3 +1,6 @@
+import time
+
+import pandas as pd
 import streamlit as st
 
 from agents.data_query_agent import DataQueryAgent
@@ -49,14 +52,47 @@ if not keys_missing(agent.required_api_keys):
             add_chat_message(agent_name=agent.agent_name, role="human", content=query)
 
             with st.spinner(text="Thinking..."):
-                ai_messages = []
-                for event in agent_graph.stream(
+                result = agent_graph.invoke(
                     input=agent_input,
                     config=config,
-                    stream_mode="updates",
-                ):
-                    for k, v in event.items():
-                        ai_messages.append(v)
+                )
 
-            for message in ai_messages:
-                display_message(agent_name=agent.agent_name, v=message)
+            def stream_data(content):
+                for word in content.split(" "):
+                    yield word + " "
+                    time.sleep(0.04)
+
+            if result:
+                with st.chat_message("ai"):
+                    if result["results"] is "NOT_RELEVANT":
+                        st.write_stream(
+                            stream_data(
+                                content="I'm sorry, I couldn't find any relevant data."
+                            )
+                        )
+                    else:
+                        st.write_stream(stream_data(content=result["answer"]))
+
+                        st.header("SQL Query:")
+                        st.code(
+                            body=result["sql_query"], language="sql", wrap_lines=True
+                        )
+
+                        dataframe = pd.DataFrame(
+                            data=result["results"], columns=result["query_columns"]
+                        )
+
+                        st.header("Data:")
+                        st.dataframe(
+                            data=dataframe,
+                            hide_index=True,
+                        )
+
+                        st.header("Data Visualization:")
+                        st.bar_chart(
+                            data=dataframe,
+                            x=dataframe.columns[0],
+                            y=dataframe.columns[1],
+                            x_label=dataframe.columns[0],
+                            y_label=dataframe.columns[1],
+                        )
