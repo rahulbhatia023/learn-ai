@@ -29,3 +29,4 @@ yfinance = "^0.2.51"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+package-mode = false
