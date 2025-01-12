@@ -62,13 +62,11 @@ def add_banner(banner_title, banner_image_name, banner_content, launch_button_ur
 
 add_banner(
     banner_title="Data Query Agent",
-    banner_image_name="data-query-agent-banner.png",
+    banner_image_name="data-query-agent-banner.jpeg",
     banner_content="""
-        Bridges the gap between natural language questions and datasets.
-        Allows users to upload SQLite databases or CSV files.
-        Translates user questions into SQL queries.
-        Executes SQL queries on the provided dataset.
-        Formats query results into human-readable responses.
+        This agent connects natural language queries with data visualization, enabling users to explore datasets effortlessly. 
+        Users can upload a SQLite database or a CSV file and ask questions about their data using natural language. 
+        The agent translates these questions into SQL queries, executes them on the database, and presents the results as clear and insightful visualizations.
     """,
     launch_button_url="Data_Query_Agent",
 )
