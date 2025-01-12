@@ -54,6 +54,10 @@ It uses Yahoo Finance API tools to fetch the data and OpenAI API to generate the
 It aims to empower you with clear, actionable insights to navigate the financial landscape effectively.
 Users should conduct their own research or consult a financial advisor before making decisions.
 
+### [6. Data Query Agent](https://learn-ai.streamlit.app/Data_Query_Agent)
+This agent connects natural language queries with data visualization, enabling users to explore datasets effortlessly. 
+Users can upload a SQLite database or a CSV file and ask questions about their data using natural language. 
+The agent translates these questions into SQL queries, executes them on the database, and presents the results as clear and insightful visualizations.
 <br>
 
 ---
