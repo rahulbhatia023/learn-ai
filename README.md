@@ -15,7 +15,6 @@ You can access the UI interface [here](https://learn-ai.streamlit.app/). <br><br
 
 ### [1. Simple RAG](https://learn-ai.streamlit.app/Simple_RAG)
 
-# round borders
 <img src="static/images/simple-rag-banner.jpg" width="400" height="250" style="border-radius: 20px;">
 
 One of the most common use cases of Generative AI is RAG (Retrieval Augmented Generation). 
