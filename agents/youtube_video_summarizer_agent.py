@@ -29,8 +29,13 @@ class YoutubeVideoSummarizerAgent:
 
         llm = ChatOpenAI(model_name="gpt-4o")
 
+        def po_token_verifier():
+            visitor_data = "CgtadWVJR1BCWk9LVSjp4Jq8BjIKCgJDQRIEGgAgXA%3D%3D"
+            po_token = "MnR-BDXHp0JpAH489LXTCNTh4BvHj_qes_LwqiGA07kkd5-cPH04sRSUn22x9g1jhVgmeH3kyVtokcwXzTL2V5yur4mM1dVkBFPtuaV7idhLaXhuBa_rDo8ZQ19yQxAyZzRXPFbFHpPYUW9KnLT51rYcYbKKHg=="
+            return visitor_data, po_token
+
         def download_audio(state: YoutubeVideoSummarizerState):
-            video = YouTube(state["video_url"], 'WEB')
+            video = YouTube(state["video_url"], po_token_verifier=po_token_verifier)
             audio_file_name = video.streams.filter(only_audio=True).first().download()
             audio_file_base_name = os.path.basename(audio_file_name)
             name, extension = os.path.splitext(audio_file_base_name)
