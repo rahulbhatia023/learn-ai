@@ -1,3 +1,5 @@
+from typing import Literal
+
 from streamlit_extras.stylable_container import stylable_container
 import streamlit as st
 
@@ -31,13 +33,11 @@ app_container_style = """
 """
 
 
-def set_page_config(
-    page_title: str,
-):
+def set_page_config(page_title: str, page_layout: Literal["centered", "wide"] = "wide"):
     st.set_page_config(
         page_title=page_title,
         page_icon="🤖",
-        layout="wide",
+        layout=page_layout,
     )
 
     st.html(

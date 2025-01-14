@@ -62,11 +62,12 @@ def add_banner(banner_title, banner_image_name, banner_content, launch_button_ur
 
 add_banner(
     banner_title="Youtube Video Summarizer",
-    banner_image_name="data-query-agent-banner.jpeg",
+    banner_image_name="youtube-video-summarizer-banner.png",
     banner_content="""
-        This agent connects natural language queries with data visualization, enabling users to explore datasets effortlessly. 
-        Users can upload a SQLite database or a CSV file and ask questions about their data using natural language. 
-        The agent translates these questions into SQL queries, executes them on the database, and presents the results as clear and insightful visualizations.
+        This agent summarizes YouTube videos using AI-powered natural language processing. 
+        Users can input the URL of a YouTube video, and the agent will generate a concise summary of the video's content. 
+        The agent uses a combination of video analysis and text summarization to provide a detailed overview of the video. 
+        It is a powerful tool for extracting key information from videos and saving time for users.
     """,
     launch_button_url="Youtube_Video_Summarizer",
 )

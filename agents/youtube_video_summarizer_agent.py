@@ -6,7 +6,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.constants import START, END
 from langgraph.graph import StateGraph
 from openai import OpenAI
-from pytube import YouTube
+from pytubefix import YouTube
 import os
 import streamlit as st
 
@@ -45,26 +45,28 @@ class YoutubeVideoSummarizerAgent:
             return {"transcript": transcript}
 
         def summarize_video(state: YoutubeVideoSummarizerState):
-            prompt = ChatPromptTemplate.from_messages[
-                (
-                    "system",
-                    """
-                        You are an AI expert in summarizing video content based on provided transcript. 
-                        Given a video transcript in plain text, your task is to generate a concise and engaging summary that highlights the key points, main topics, and any important insights discussed in the video. 
-                        Structure the summary in a user-friendly format, such as a short paragraph, bullet points, or both, depending on the user’s preference. 
-                        Focus on delivering the most relevant and actionable information from the transcript while omitting unnecessary details.
-                    """,
-                ),
-                (
-                    "human",
-                    """
-                        Here is the transcript of the video:
-                        {transcript}
-                        
-                        Please summarize the video.
-                    """,
-                ),
-            ]
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    (
+                        "system",
+                        """
+                            You are an AI expert in summarizing video content based on provided transcript. 
+                            Given a video transcript in plain text, your task is to generate a concise and engaging summary that highlights the key points, main topics, and any important insights discussed in the video. 
+                            Structure the summary in a user-friendly format, such as a short paragraph, bullet points, or both, depending on the user’s preference. 
+                            Focus on delivering the most relevant and actionable information from the transcript while omitting unnecessary details.
+                        """,
+                    ),
+                    (
+                        "human",
+                        """
+                            Here is the transcript of the video:
+                            {transcript}
+                            
+                            Please summarize the video.
+                        """,
+                    ),
+                ]
+            )
 
             response = llm.invoke(prompt.format(transcript=state["transcript"])).content
 
