@@ -52,7 +52,12 @@ if not keys_missing(agent.required_api_keys):
         # Video Preview
         st.video(url)
 
-        video = YouTube(url)
+        video = YouTube(
+            url=url,
+            token_file=st.session_state["youtube_token_file"],
+            use_po_token=True,
+        )
+
         st.html(f"<h1 style={app_container_title_style}>{video.title}</h1><br>")
 
         with container("video_summary"):
