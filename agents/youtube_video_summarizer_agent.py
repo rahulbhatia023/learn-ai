@@ -29,17 +29,11 @@ class YoutubeVideoSummarizerAgent:
 
         llm = ChatOpenAI(model_name="gpt-4o")
 
-        def _default_po_token_verifier() -> Tuple[str, str]:
-            visitor_data = str(st.secrets["YOUTUBE_VISITOR_DATA"])
-            po_token = str(st.secrets["YOUTUBE_PO_TOKEN"])
-            return visitor_data, po_token
-
         def download_audio(state: YoutubeVideoSummarizerState):
             video = YouTube(
                 url=state["video_url"],
-                token_file="/tmp",
+                token_file=st.session_state["youtube_token_file"],
                 use_po_token=True,
-                po_token_verifier=_default_po_token_verifier,
             )
             audio_file_name = video.streams.filter(only_audio=True).first().download()
             audio_file_base_name = os.path.basename(audio_file_name)
