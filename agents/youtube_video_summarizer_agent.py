@@ -37,6 +37,7 @@ class YoutubeVideoSummarizerAgent:
         def download_audio(state: YoutubeVideoSummarizerState):
             video = YouTube(
                 url=state["video_url"],
+                token_file="/tmp",
                 use_po_token=True,
                 po_token_verifier=_default_po_token_verifier,
             )
