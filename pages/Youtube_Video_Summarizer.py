@@ -4,7 +4,6 @@ import time
 
 import streamlit as st
 from pytubefix import YouTube
-from streamlit import video
 
 from agents.youtube_video_summarizer_agent import YoutubeVideoSummarizerAgent
 from common.langgraph import add_langgraph_workflow_visualization
