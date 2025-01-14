@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import TypedDict, Tuple
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
@@ -29,14 +29,16 @@ class YoutubeVideoSummarizerAgent:
 
         llm = ChatOpenAI(model_name="gpt-4o")
 
-        def po_token_verifier():
-            return st.secrets["YOUTUBE_VISITOR_DATA"], st.secrets["YOUTUBE_PO_TOKEN"]
+        def _default_po_token_verifier() -> Tuple[str, str]:
+            visitor_data = str(st.secrets["YOUTUBE_VISITOR_DATA"])
+            po_token = str(st.secrets["YOUTUBE_PO_TOKEN"])
+            return visitor_data, po_token
 
         def download_audio(state: YoutubeVideoSummarizerState):
             video = YouTube(
-                state["video_url"],
+                url=state["video_url"],
                 use_po_token=True,
-                po_token_verifier=po_token_verifier,
+                po_token_verifier=_default_po_token_verifier,
             )
             audio_file_name = video.streams.filter(only_audio=True).first().download()
             audio_file_base_name = os.path.basename(audio_file_name)
