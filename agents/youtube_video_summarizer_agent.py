@@ -30,7 +30,7 @@ class YoutubeVideoSummarizerAgent:
         llm = ChatOpenAI(model_name="gpt-4o")
 
         def download_audio(state: YoutubeVideoSummarizerState):
-            video = YouTube(state["video_url"])
+            video = YouTube(state["video_url"], 'WEB')
             audio_file_name = video.streams.filter(only_audio=True).first().download()
             audio_file_base_name = os.path.basename(audio_file_name)
             name, extension = os.path.splitext(audio_file_base_name)

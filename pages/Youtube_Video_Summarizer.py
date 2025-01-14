@@ -35,7 +35,7 @@ if not keys_missing(agent.required_api_keys):
         st.video(url)
 
         # Video Title
-        video = YouTube(url)
+        video = YouTube(url, 'WEB')
         st.html(f"<h1 style={app_container_title_style}>{video.title}</h1>")
 
         with container("video_summary"):
