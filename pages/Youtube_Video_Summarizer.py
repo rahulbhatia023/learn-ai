@@ -3,6 +3,8 @@ import tempfile
 import time
 
 import streamlit as st
+from pytubefix import YouTube
+from streamlit import video
 
 from agents.youtube_video_summarizer_agent import YoutubeVideoSummarizerAgent
 from common.langgraph import add_langgraph_workflow_visualization
@@ -11,7 +13,11 @@ from common.theme import (
     set_page_config,
     container,
     container_title,
+    app_container_title_style,
 )
+
+if not "youtube_token_file" in st.session_state:
+    st.session_state["youtube_token_file"] = None
 
 agent = YoutubeVideoSummarizerAgent
 
@@ -30,24 +36,25 @@ with st.sidebar:
     add_langgraph_workflow_visualization(agent_graph)
 
 if not keys_missing(agent.required_api_keys):
-    if not "youtube_token_file" in st.session_state:
-        st.session_state["youtube_token_file"] = None
+    if not st.session_state["youtube_token_file"]:
+        with tempfile.NamedTemporaryFile(delete=False, mode="w") as file:
+            json.dump(
+                {
+                    "visitorData": st.secrets["YOUTUBE_VISITOR_DATA"],
+                    "po_token": st.secrets["YOUTUBE_PO_TOKEN"],
+                },
+                file,
+            )
 
-    with tempfile.NamedTemporaryFile(delete=False, mode="w") as file:
-        json.dump(
-            {
-                "visitorData": st.secrets["YOUTUBE_VISITOR_DATA"],
-                "po_token": st.secrets["YOUTUBE_PO_TOKEN"],
-            },
-            file,
-        )
-
-        file.flush()
-        st.session_state["youtube_token_file"] = file.name
+            file.flush()
+            st.session_state["youtube_token_file"] = file.name
 
     if url := st.chat_input(placeholder="Enter the YouTube video URL"):
         # Video Preview
         st.video(url)
+
+        video = YouTube(url)
+        st.html(f"<h1 style={app_container_title_style}>{video.title}</h1><br>")
 
         with container("video_summary"):
             container_title("Summary")
