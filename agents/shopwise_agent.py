@@ -1,3 +1,4 @@
+import random
 from typing import TypedDict, Optional, List
 
 import streamlit as st
@@ -39,6 +40,7 @@ class RecommendedProducts(BaseModel):
 
 class ShopWiseAgentState(TypedDict):
     query: str
+    web_search_url: str
     web_search_content: str
     recommended_products: RecommendedProducts
 
@@ -61,12 +63,13 @@ class ShopWiseAgent:
         )
 
         def web_search(state: ShopWiseAgentState):
-            web_search_result = tavily_client.search(
-                query=state["query"],
-                max_results=1,
-                include_images=True,
-                include_raw_content=True,
-            )["results"][0]
+            web_search_results = tavily_client.search(
+                query=state["query"], max_results=3
+            )["results"]
+
+            web_search_result = web_search_results[
+                random.randint(0, len(web_search_results) - 1)
+            ]
 
             firecrawl_loader = FireCrawlLoader(
                 api_key=st.session_state["FIRECRAWL_API_KEY"],
@@ -78,7 +81,10 @@ class ShopWiseAgent:
                 [doc.page_content for doc in firecrawl_loader.lazy_load()]
             )
 
-            return {"web_search_content": web_search_content}
+            return {
+                "web_search_url": web_search_result["url"],
+                "web_search_content": web_search_content,
+            }
 
         def recommended_products(state: ShopWiseAgentState):
             web_search_content = state["web_search_content"]

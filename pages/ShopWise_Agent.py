@@ -63,16 +63,28 @@ if not keys_missing(agent.required_api_keys):
             st.write(query)
 
         with st.spinner(text="Searching web for products..."):
-            agent_graph.invoke(
+            web_search_url = agent_graph.invoke(
                 input={"query": query},
                 config={"configurable": {"thread_id": "1"}},
-            )
+            )["web_search_url"]
+
+            with st.container(border=True):
+                st.html(
+                    "<p style='font-family:Poppins;'>Looking at the below source for products:</p>"
+                )
+                st.info(web_search_url)
 
         with st.spinner(text="Generating list of recommended products..."):
             state = agent_graph.invoke(
                 input=None,
                 config={"configurable": {"thread_id": "1"}},
             )
-            display_recommended_products(
-                state["recommended_products"], number_of_products_in_a_row=3
-            )
+
+            with st.container(border=True):
+                st.html(
+                    "<p style='font-family:Poppins;'>Below are the recommended products:</p>"
+                )
+
+                display_recommended_products(
+                    state["recommended_products"], number_of_products_in_a_row=3
+                )
