@@ -61,6 +61,17 @@ def add_banner(banner_title, banner_image_name, banner_content, launch_button_ur
 
 
 add_banner(
+    banner_title="ShopWise Agent",
+    banner_image_name="shopwise-agent-banner.jpg",
+    banner_content="""
+        ShopWise Agent revolutionizes the online shopping experience with the power of agentic AI.
+        Whether users have expertise in the product’s field or not, ShopWise Agent helps them discover the best-suited products tailored to their unique needs and preferences. 
+        By offering intelligent recommendations and decisive insights, it empowers customers to make informed choices and enjoy a seamless shopping experience.
+    """,
+    launch_button_url="ShopWise_Agent",
+)
+
+add_banner(
     banner_title="Youtube Video Summarizer",
     banner_image_name="youtube-video-summarizer-banner.png",
     banner_content="""
