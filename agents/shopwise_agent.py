@@ -72,8 +72,14 @@ class ProductsComparison(BaseModel):
     products_comparison: List[ComparedProduct] = Field(
         description="The top 3 recommended products based on the comparison."
     )
-    top_3_recommendations_reasoning: str = Field(
-        description="A brief explanation of why these products were recommended."
+
+
+class BestProduct(BaseModel):
+    best_product: ComparedProduct = Field(
+        description="The best product among the top 3 recommended products."
+    )
+    justification: str = Field(
+        description="A brief explanation of why this product was chosen as the best option."
     )
 
 
@@ -83,6 +89,7 @@ class ShopWiseAgentState(TypedDict):
     web_search_content: str
     recommended_products: RecommendedProducts
     products_comparison: ProductsComparison
+    best_product: BestProduct
 
 
 class ShopWiseAgent:
@@ -181,20 +188,51 @@ class ShopWiseAgent:
                 )
             )
 
-            return {"products_comparison": response}
+            return {"products_comparison": response.products_comparison}
+
+        def best_product(state: ShopWiseAgentState):
+            prompt_template = """
+                You are an expert assistant specializing in product analysis and decision-making. Your task is to evaluate the top 3 recommended products and select the single best option based on their attributes and overall score. 
+
+                Evaluation Details:
+                User Criteria: 
+                {user_query}
+                
+                Top 3 Products:
+                {top3_products}
+
+                Instructions:
+                1. Carefully compare the top 3 products across the various available scores.                
+                2. Select the best single option based on the overall score and the user's criteria. 
+                3. Clearly explain why the selected product is the best option, referencing its strengths over the other two products.
+            """
+
+            response = llm.with_structured_output(BestProduct).invoke(
+                PromptTemplate(
+                    template=prompt_template,
+                    input_variables=["user_query", "top3_products"],
+                ).format(
+                    user_query=state["query"],
+                    top3_products=state["products_comparison"],
+                )
+            )
+
+            return {"best_product": response}
 
         graph = StateGraph(ShopWiseAgentState)
 
         graph.add_node("Web Search", web_search)
-        graph.add_node("Recommended Products", recommended_products)
+        graph.add_node("Recommend Products", recommended_products)
         graph.add_node("Compare Products", compare_products)
+        graph.add_node("Get Best Product", best_product)
 
         graph.add_edge(START, "Web Search")
-        graph.add_edge("Web Search", "Recommended Products")
-        graph.add_edge("Recommended Products", "Compare Products")
-        graph.add_edge("Compare Products", END)
+        graph.add_edge("Web Search", "Recommend Products")
+        graph.add_edge("Recommend Products", "Compare Products")
+        graph.add_edge("Compare Products", "Get Best Product")
+        graph.add_edge("Get Best Product", END)
 
         return graph.compile(
             checkpointer=MemorySaver(),
-            interrupt_after=["Web Search", "Recommended Products"],
+            interrupt_after=["Web Search", "Recommend Products", "Compare Products"],
         )
