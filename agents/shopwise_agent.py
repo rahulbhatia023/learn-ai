@@ -164,7 +164,7 @@ class ShopWiseAgent:
 
         def compare_products(state: ShopWiseAgentState):
             prompt_template = """
-                You are a professional assistant skilled in product analysis and comparison. Your task is to evaluate and compare the following products based on key attributes to recommend up to 3 of the best options. 
+                You are a professional assistant skilled in product analysis and comparison. Your task is to evaluate and compare the following products based on key attributes to recommend up to max 3 of the best options. 
     
                 User Criteria:
                 {user_query}
@@ -188,7 +188,7 @@ class ShopWiseAgent:
                 )
             )
 
-            return {"products_comparison": response.products_comparison}
+            return {"products_comparison": response.products_comparison[:3]}
 
         def best_product(state: ShopWiseAgentState):
             prompt_template = """
