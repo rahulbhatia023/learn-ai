@@ -14,9 +14,7 @@ from tavily import TavilyClient
 
 class RecommendedProduct(BaseModel):
     name: str = Field(description="The product name.")
-    description: str = Field(
-        description="A concise summary of the product's main features or purpose."
-    )
+    description: str = Field(description="A detailed information of the product")
     price: Optional[float] = Field(description="The product's price.")
     currency: str = Field(description="The currency in which the price is listed.")
     features: List[str] = Field(
@@ -38,11 +36,53 @@ class RecommendedProducts(BaseModel):
     recommended_products: List[RecommendedProduct]
 
 
+class ComparedProduct(BaseModel):
+    recommended_product: RecommendedProduct
+    price_score: float = Field(
+        description="Is it reasonably priced considering its features and quality?"
+    )
+    value_score: float = Field(
+        description="Does the product offer good value for its price?"
+    )
+    features_score: float = Field(
+        description="Does it offer the features relevant to the user's query?"
+    )
+    specs_score: float = Field(
+        description="Does the product meet the user's specifications?"
+    )
+    brand_score: float = Field(description="Is the brand reputable and trusted?")
+    usp_score: float = Field(
+        description="Does the product have any standout features or benefits?"
+    )
+    support_score: float = Field(
+        description="Are there good after-sales services or warranties?"
+    )
+    relevance_score: float = Field(
+        description="How well does the product match the user's criteria?"
+    )
+    overall_score: float = Field(
+        description="The overall score calculated based on the individual attribute scores."
+    )
+    score_summary: str = Field(
+        description="A brief summary of the product's overall score and why it was recommended."
+    )
+
+
+class ProductsComparison(BaseModel):
+    products_comparison: List[ComparedProduct] = Field(
+        description="The top 3 recommended products based on the comparison."
+    )
+    top_3_recommendations_reasoning: str = Field(
+        description="A brief explanation of why these products were recommended."
+    )
+
+
 class ShopWiseAgentState(TypedDict):
     query: str
     web_search_url: str
     web_search_content: str
     recommended_products: RecommendedProducts
+    products_comparison: ProductsComparison
 
 
 class ShopWiseAgent:
@@ -115,13 +155,46 @@ class ShopWiseAgent:
 
             return {"recommended_products": response.recommended_products}
 
+        def compare_products(state: ShopWiseAgentState):
+            prompt_template = """
+                You are a professional assistant skilled in product analysis and comparison. Your task is to evaluate and compare the following products based on key attributes to recommend up to 3 of the best options. 
+    
+                User Criteria:
+                {user_query}
+    
+                Product Details:
+                {recommended_products}
+    
+                Instructions:
+                1. Assign a score between 1 and 10 for each attribute.
+                2. Calculate an overall score for each product by averaging the attribute scores.
+                3. Recommend up to 3 products with the highest overall scores. Provide a concise explanation for your recommendations, highlighting why they are the best fit for the user's needs.
+            """
+
+            response = llm.with_structured_output(ProductsComparison).invoke(
+                PromptTemplate(
+                    template=prompt_template,
+                    input_variables=["user_query", "recommended_products"],
+                ).format(
+                    user_query=state["query"],
+                    recommended_products=state["recommended_products"],
+                )
+            )
+
+            return {"products_comparison": response}
+
         graph = StateGraph(ShopWiseAgentState)
 
         graph.add_node("Web Search", web_search)
         graph.add_node("Recommended Products", recommended_products)
+        graph.add_node("Compare Products", compare_products)
 
         graph.add_edge(START, "Web Search")
         graph.add_edge("Web Search", "Recommended Products")
-        graph.add_edge("Recommended Products", END)
+        graph.add_edge("Recommended Products", "Compare Products")
+        graph.add_edge("Compare Products", END)
 
-        return graph.compile(checkpointer=MemorySaver(), interrupt_after=["Web Search"])
+        return graph.compile(
+            checkpointer=MemorySaver(),
+            interrupt_after=["Web Search", "Recommended Products"],
+        )
