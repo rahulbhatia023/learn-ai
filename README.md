@@ -103,6 +103,14 @@ It is a powerful tool for extracting key information from videos and saving time
 
 <br>
 
+### [8. ShopWise Agent](https://learn-ai.streamlit.app/ShopWise_Agent)
+
+<img src="static/images/shopwise-agent-banner.jpg" width="400" height="250">
+
+ShopWise Agent revolutionizes the online shopping experience with the power of agentic AI. 
+Whether users have expertise in the product’s field or not, ShopWise Agent helps them discover the best-suited products tailored to their unique needs and preferences. 
+By offering intelligent recommendations and decisive insights, it empowers customers to make informed choices and enjoy a seamless shopping experience.
+
 ---
 
 # Note
